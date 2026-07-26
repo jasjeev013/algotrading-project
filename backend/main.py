@@ -1,3 +1,10 @@
+from pydantic import BaseModel
+from typing import Dict, Any
+
+from data_fetcher import fetch_historical_data
+from strategies import SMACrossover, BollingerBands, MLRandomForest
+from backtester import run_iterative_backtest
+from analytics import calculate_metrics
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from data_fetcher import fetch_historical_data
@@ -54,4 +61,64 @@ def get_market_data(
         raise HTTPException(status_code=404, detail=str(ve))
     except Exception as e:
         # Return a 500 Internal Server Error for everything else
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Create a Pydantic model to validate the incoming JSON payload from the frontend
+class BacktestRequest(BaseModel):
+    ticker: str
+    start_date: str
+    end_date: str
+    interval: str = "1d"
+    strategy: str
+    strategy_params: Dict[str, Any] = {}
+    initial_capital: float = 10000.0
+    commission_pct: float = 0.001
+
+@app.post("/api/backtest")
+def run_backtest(request: BacktestRequest):
+    try:
+        # 1. Fetch Data
+        raw_data = fetch_historical_data(
+            ticker=request.ticker.upper(),
+            start_date=request.start_date,
+            end_date=request.end_date,
+            interval=request.interval
+        )
+        
+        # 2. Select Strategy and Generate Signals
+        strategy_class = None
+        if request.strategy == "SMA":
+            strategy_class = SMACrossover(raw_data, **request.strategy_params)
+        elif request.strategy == "Bollinger":
+            strategy_class = BollingerBands(raw_data, **request.strategy_params)
+        elif request.strategy == "ML":
+            strategy_class = MLRandomForest(raw_data, **request.strategy_params)
+        else:
+            raise HTTPException(status_code=400, detail="Unknown strategy selected.")
+            
+        signal_df = strategy_class.generate_signals()
+        
+        # 3. Run the Backtest Engine
+        equity_curve, trade_log = run_iterative_backtest(
+            df=signal_df,
+            initial_capital=request.initial_capital,
+            commission_pct=request.commission_pct
+        )
+        
+        # 4. Calculate Analytics Metrics
+        metrics = calculate_metrics(
+            equity_curve=equity_curve,
+            trade_log=trade_log,
+            initial_capital=request.initial_capital
+        )
+        
+        # 5. Return everything nicely packaged for the frontend!
+        return {
+            "status": "success",
+            "metrics": metrics,
+            "equity_curve": equity_curve,
+            "trade_log": trade_log[::-1] # Reverse list so newest trades are at the top
+        }
+
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
