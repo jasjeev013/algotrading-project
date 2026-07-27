@@ -44,10 +44,10 @@ To ensure you can expand this project later, we will use **Separation of Concern
 ## 6. Task List & Work Breakdown Structure (WBS)
 
 ### Phase 1: Environment Setup & Architecture (✅ Completed)
-*   [x] 1.1 Create project repository.
-*   [x] 1.2 Initialize FastAPI backend and React frontend.
-*   [x] 1.3 Setup CORS for API communication.
-*   [x] 1.4 Setup version control (Git).
+*   1.1 Create project repository.
+*   1.2 Initialize FastAPI backend and React frontend.
+*   1.3 Setup CORS for API communication.
+*   1.4 Setup version control (Git).
 
 ### Phase 2: Data Engineering (Backend)
 *   2.1 Create a `data_fetcher.py` module.
@@ -90,5 +90,3 @@ To ensure you can expand this project later, we will use **Separation of Concern
 *   7.3 Final code refactoring and commenting.
 
 ---
-
-Whenever you are ready to begin, we can dive straight into **Phase 2**, starting with the `data_fetcher.py` and the FastAPI endpoint!

@@ -112,12 +112,16 @@ def run_backtest(request: BacktestRequest):
             initial_capital=request.initial_capital
         )
         
-        # 5. Return everything nicely packaged for the frontend!
+        # --- NEW: Extract price data for the frontend chart ---
+        price_data = signal_df[['time', 'open', 'high', 'low', 'close']].to_dict(orient='records')
+        
+        # 5. Return everything nicely packaged!
         return {
             "status": "success",
             "metrics": metrics,
             "equity_curve": equity_curve,
-            "trade_log": trade_log[::-1] # Reverse list so newest trades are at the top
+            "trade_log": trade_log[::-1], # Reverse list so newest trades are at top
+            "price_data": price_data      # <--- NEW
         }
 
     except Exception as e:
