@@ -11,7 +11,7 @@ function App() {
   const [endDate, setEndDate] = useState("2023-01-01")
   const [strategy, setStrategy] = useState("SMA")
   const [capital, setCapital] = useState(10000)
-  
+
   // App State
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -19,6 +19,20 @@ function App() {
 
   // --- API CALL ---
   const runBacktest = async () => {
+
+    if (!ticker.trim()) {
+      setError("Please enter a valid Ticker Symbol.");
+      return;
+    }
+    if (new Date(startDate) >= new Date(endDate)) {
+      setError("Start Date must be before End Date.");
+      return;
+    }
+    if (capital <= 0) {
+      setError("Initial Capital must be greater than 0.");
+      return;
+    }
+
     setLoading(true)
     setError(null)
     setResults(null)
@@ -71,7 +85,7 @@ function App() {
       {/* SIDEBAR: Controls */}
       <div className="sidebar">
         <h2>QuantDash</h2>
-        
+
         <div className="input-group">
           <label>Ticker Symbol</label>
           <input type="text" value={ticker} onChange={(e) => setTicker(e.target.value)} />
@@ -101,9 +115,9 @@ function App() {
           <input type="number" value={capital} onChange={(e) => setCapital(e.target.value)} />
         </div>
 
-        <button 
-          className="run-btn" 
-          onClick={runBacktest} 
+        <button
+          className="run-btn"
+          onClick={runBacktest}
           disabled={loading}
         >
           {loading ? "Running Test..." : "Run Backtest"}
@@ -116,42 +130,48 @@ function App() {
         <br />
 
         {error && <div className="error-message">{error}</div>}
-
+        {/* Loading State */}
+        {loading && (
+          <div style={{ textAlign: 'center', marginTop: '50px' }}>
+            <div className="spinner"></div>
+            <p style={{ color: '#aaa', marginTop: '15px' }}>Running Backtest Engine...</p>
+          </div>
+        )}
         {results && (
           <>
             {/* Top Metrics Row */}
             <div className="metrics-grid">
-              <MetricCard 
-                title="Total Return" 
-                value={results.metrics.total_return_pct} 
-                suffix="%" 
-                isColorCoded={true} 
+              <MetricCard
+                title="Total Return"
+                value={results.metrics.total_return_pct}
+                suffix="%"
+                isColorCoded={true}
               />
-              <MetricCard 
-                title="CAGR" 
-                value={results.metrics.cagr_pct} 
-                suffix="%" 
-                isColorCoded={true} 
+              <MetricCard
+                title="CAGR"
+                value={results.metrics.cagr_pct}
+                suffix="%"
+                isColorCoded={true}
               />
-              <MetricCard 
-                title="Max Drawdown" 
-                value={results.metrics.max_drawdown_pct} 
-                suffix="%" 
-                isColorCoded={true} 
+              <MetricCard
+                title="Max Drawdown"
+                value={results.metrics.max_drawdown_pct}
+                suffix="%"
+                isColorCoded={true}
               />
-              <MetricCard 
-                title="Win Rate" 
-                value={results.metrics.win_rate_pct} 
-                suffix="%" 
+              <MetricCard
+                title="Win Rate"
+                value={results.metrics.win_rate_pct}
+                suffix="%"
               />
-              <MetricCard 
-                title="Sharpe Ratio" 
-                value={results.metrics.sharpe_ratio} 
-                isColorCoded={true} 
+              <MetricCard
+                title="Sharpe Ratio"
+                value={results.metrics.sharpe_ratio}
+                isColorCoded={true}
               />
-              <MetricCard 
-                title="Total Trades" 
-                value={results.metrics.total_trades} 
+              <MetricCard
+                title="Total Trades"
+                value={results.metrics.total_trades}
               />
             </div>
 
@@ -161,9 +181,9 @@ function App() {
               <p style={{ color: '#888', marginBottom: '10px', fontSize: '14px' }}>
                 Green arrows = Buy, Red arrows = Sell Short, Orange arrows = Exit Position.
               </p>
-              <TradingChart 
-                priceData={results.price_data} 
-                tradeLog={results.trade_log} 
+              <TradingChart
+                priceData={results.price_data}
+                tradeLog={results.trade_log}
               />
             </div>
 
@@ -210,7 +230,7 @@ function App() {
             </div>
           </>
         )}
-        
+
         {!results && !loading && !error && (
           <div style={{ color: '#888', marginTop: '20px' }}>
             Configure your parameters on the left and click "Run Backtest" to begin.
