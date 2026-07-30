@@ -1,68 +1,206 @@
 # Project Master Plan: QuantDash MVP 2.0
 
 ## 1. Project Vision
-To upgrade the QuantDash architecture from a static, end-of-day backtesting tool into a **live-execution, event-driven algorithmic trading bot**. MVP 2.0 will bridge the gap between theoretical profitability and real-world execution by introducing realistic market friction, advanced validation (walk-forward), and live paper-trading via the OANDA API.
+Evolve QuantDash from a static, end-of-day backtesting tool into a **live-execution, event-driven algorithmic trading bot**. MVP 2.0 bridges the gap between theoretical profitability and real-world execution by introducing realistic market friction, rigorous walk-forward validation, and live paper-trading via the OANDA API.
+
+---
 
 ## 2. Core Upgrades & The "Why"
-*   **Live Execution (OANDA API):** Backtests mean nothing without execution. We will connect to OANDA’s Practice (Paper) API to stream live Forex/CFD data and execute real-time orders.
-*   **Walk-Forward Testing:** To stop Machine Learning models from "cheating" by seeing future data (Overfitting), we will implement rolling-window Walk-Forward Optimization (WFO).
-*   **Market Microstructure (Advanced Transaction Costs):** A 0.1% flat fee isn't realistic. We will model the **Bid/Ask Spread**, **Slippage** (price moving against you before your order fills), and **Overnight Financing Fees**.
-*   **Deeper Data (Intraday):** Moving from `1d` (Daily) to `1m` and `15m` intraday timeframes.
-*   **Multi-Asset & Macro Tracking:** Expanding the dashboard to track broader indices (S&P 500, VIX) alongside the traded asset to act as market regime filters (e.g., "Don't buy if VIX > 30").
+
+| Upgrade | Why It Matters |
+|---------|---------------|
+| **Walk-Forward Testing** | Prevents ML strategies from "seeing the future" (overfitting). Strategies must prove they work on unseen data before going live. |
+| **Market Microstructure** | A flat 0.1% commission isn't realistic. Bid/ask spread, slippage, and overnight financing fees significantly erode real returns. |
+| **OANDA Paper API** | Backtests are simulations. OANDA paper trading proves the execution pipeline works before risking real capital. |
+| **Event-Driven Architecture** | Live markets emit events (new candle, price tick). The system must react to events rather than batch-processing all data at once. |
+| **Persistence (DB)** | In-memory results are lost on server crash. Mid-trade crashes without a DB mean unknown position state — dangerous for live execution. |
+| **Intraday Data** | Daily candles are too slow for most strategies. Moving to `15m` intervals dramatically increases signal frequency and realism. |
 
 ---
 
-## 3. Architecture Evolution: Iterative $\rightarrow$ Event-Driven
-In V1, we used a simple `for` loop to iterate through data all at once. For V2, we must build an **Event-Driven Architecture**. 
-*   *Why?* Because live markets generate "events" (a new minute passes, a new price tick arrives). Your system must sit and wait for a `MarketEvent`, run the Strategy to generate a `SignalEvent`, and send an `OrderEvent` to OANDA.
+## 3. Architecture Evolution
+
+### V1 Architecture (Current)
+```
+for row in historical_data:          ← simple for-loop, all data known upfront
+    strategy.generate_signals()
+    backtest.simulate()
+```
+
+### V2 Target Architecture (Event-Driven)
+```
+while bot is running:
+    wait for MarketEvent (new candle arrives every 15 min)
+        → run Strategy → generate SignalEvent
+        → if signal: run RiskManager → generate OrderEvent
+        → send OrderEvent to OANDA ExecutionHandler
+        → log everything to DB
+```
+
+The key difference: in V2, the system **doesn't know future data**. Each cycle processes only what has arrived so far, which is identical to how live trading works.
 
 ---
 
-## 4. Phase Breakdown & Task List (WBS)
+## 4. Phase Breakdown & Task List
 
-### Phase 1: Data Depth & Multi-Asset Tracking
-*  1.1 Upgrade `data_fetcher.py` to support intraday intervals (`1m`, `5m`, `15m`) handling larger datasets.
-*  1.2 Implement a `MarketRegime` module: Fetch tracking data like the VIX (Volatility Index) or SPY to determine if the market is trending, volatile, or flat.
-*  1.3 **Frontend Update:** Add a mini-dashboard section to display live broader market health (Major indices, current volatility).
+### Phase 0: Pre-Flight Fixes (V1 Cleanup) ← START HERE
+These are known V1 bugs that must be fixed before building on top of them.
 
-### Phase 2: Advanced Microstructure & Realistic Costs
-*  2.1 Upgrade the `backtester.py` to account for the **Bid/Ask Spread** (e.g., buying at the Ask, selling at the Bid).
-*  2.2 Implement a **Slippage Model** (e.g., assuming your order fills 0.02% worse than the signal price due to latency).
-*  2.3 Implement **Overnight Fees** (swaps) for holding positions past the daily market close (crucial for Forex on OANDA).
-
-### Phase 3: Walk-Forward Testing & Deep Strategies
-*  3.1 Write a `walk_forward_engine.py`. Instead of training on 2020-2023, it will:
-    *   Train on Year 1, Trade Year 2.
-    *   Train on Year 2, Trade Year 3.
-    *   Combine the traded years into a single, highly realistic equity curve.
-*  3.2 **Strategy 1: Statistical Arbitrage (Pairs Trading).** Write a strategy that finds cointegrated pairs (e.g., AAPL & MSFT, or EUR/USD & GBP/USD) and trades the spread.
-*  3.3 **Strategy 2: Advanced ML.** Upgrade the Random Forest to use proper feature scaling, walk-forward validation, and custom features (like MACD or RSI).
-
-### Phase 4: OANDA API Integration (The Bridge)
-*  4.1 Create an OANDA Practice Account and generate an API Token.
-*  4.2 Create an `execution_handler.py` module using the `oandapyV20` Python library.
-*  4.3 Write functions for: `get_live_price()`, `get_account_balance()`, `place_market_order()`, and `close_position()`.
-*  4.4 Build a fail-safe: A "Kill Switch" that immediately liquidates all open positions if something goes wrong.
-
-### Phase 5: The Live Trading Bot (The Brain)
-*  5.1 Write a `live_bot.py` script. This script will run continuously (using Python's `asyncio` or `schedule` library).
-*  5.2 Create the Event Loop:
-    *   *Every 15 minutes:* Fetch the last 100 candles from OANDA.
-    *   Pass data to the Strategy module.
-    *   If Strategy returns "BUY", check current positions.
-    *   If no position exists, trigger `execution_handler` to send order to OANDA.
-*  5.3 Implement logging using Python's `logging` module so you have a text file recording every heartbeat and decision the bot makes.
-
-### Phase 6: Dashboard V2 (Command Center)
-*  6.1 Add a "Mode" toggle to the sidebar: **[ Backtest | Live Trading ]**.
-*  6.2 When in "Live Trading" mode, connect the frontend to new FastAPI endpoints that return live OANDA account data.
-*  6.3 Display a table of **Active Open Positions** (showing live unrealized P&L).
-*  6.4 Add a giant red "LIQUIDATE ALL" emergency button to the UI that connects to the backend Kill Switch.
+- [ ] **0.1 Fix ML data leakage** — `MLRandomForest` currently trains on the entire backtest window. Add a simple time-based train/test split (e.g., train on first 70%, predict on last 30%) so signals on the test set reflect only past data. This is a prerequisite for Phase 3 (WFO).
+- [ ] **0.2 Add Equity Curve chart** — The backend already returns `equity_curve` data. Add a `lightweight-charts` LineSeries in the frontend below the candlestick chart to visualise portfolio value over time.
+- [ ] **0.3 Add dynamic strategy params UI** — The frontend currently hardcodes `short_window=20, long_window=50` in every payload regardless of strategy. Add conditional inputs that appear based on the selected strategy dropdown.
 
 ---
 
-## 5. Technical Considerations for V2
-*   **Database:** We need to start storing things. We will introduce **SQLite** or **PostgreSQL** via `SQLAlchemy`. You need to save your Trade Log to a database, not just RAM, in case the server crashes mid-trade.
-*   **Docker:** To run a live bot, you shouldn't run it on your laptop (what if your WiFi drops?). In MVP 2.0, we will containerize the app using Docker, preparing it to be deployed to an AWS EC2 cloud server.
+### Phase 1: Data Depth & Market Regime
 
-This plan moves you out of the "beginner" tutorial phase and into serious quantitative software engineering. Whenever you are ready to begin, we can start with **Phase 1**, upgrading our data depth and preparing the backend for higher-frequency analysis!
+- [ ] **1.1 Intraday support** — `data_fetcher.py` already accepts `interval` parameter but the frontend hardcodes `"1d"`. Expose an interval dropdown in the UI and test `5m`/`15m` fetches. Note: yfinance only returns 60 days of intraday history — document this limitation clearly.
+- [ ] **1.2 Market Regime module** — Create `market_regime.py`. Fetch SPY and VIX data alongside the primary ticker. Classify the current regime: Trending (VIX < 20, SPY trending), Volatile (VIX > 30), or Sideways. Expose as a helper function so strategies can query current regime as a filter.
+- [ ] **1.3 Regime mini-dashboard** — Add a compact header section to the frontend showing: SPY price + daily change, VIX level (with colour coding: green/yellow/red), and current regime label. This sets context before running a backtest.
+
+---
+
+### Phase 2: Persistence (Database)
+
+> This phase is deliberately placed before live trading. If the bot crashes mid-trade without a DB, you won't know your position state.
+
+- [ ] **2.1 Choose and set up DB** — Use **SQLite** for local development (no server required), with `SQLAlchemy` as the ORM. Create a `database.py` module with engine setup and session management.
+- [ ] **2.2 Define models** — Create `models.py` with two tables:
+  - `BacktestRun`: id, ticker, strategy, start/end dates, params (JSON), run timestamp, metrics (JSON)
+  - `TradeRecord`: id, backtest_run_id (FK), type, entry_date, exit_date, entry_price, exit_price, pnl, net_return_pct
+- [ ] **2.3 Persist backtest results** — After each `POST /api/backtest` call, save the run and its trades to the DB. Return a `run_id` in the API response.
+- [ ] **2.4 History endpoint** — Add `GET /api/backtests` to list past runs and `GET /api/backtests/{run_id}` to replay a specific result. This enables comparing strategy runs without re-running them.
+
+---
+
+### Phase 3: Realistic Market Costs
+
+- [ ] **3.1 Bid/Ask Spread** — Modify `backtester.py` to accept a `spread_pct` parameter. When buying, add half the spread to the fill price; when selling, subtract half. Default: `0.0002` (2 pips, realistic for liquid Forex).
+- [ ] **3.2 Slippage Model** — Add a `slippage_pct` parameter. On each order, the fill price moves against you by this fraction (buys fill higher, sells fill lower). Default: `0.0001`.
+- [ ] **3.3 Overnight Financing Fee** — Add a per-position daily fee (OANDA swap rate) applied on each overnight hold. Store swap rate as a configurable param. This is critical for Forex pairs held longer than one session.
+- [ ] **3.4 Expose in UI** — Add an "Advanced Settings" collapsible section in the sidebar for spread, slippage, and overnight fee inputs.
+
+---
+
+### Phase 4: Walk-Forward Testing & Strategy Upgrades
+
+- [ ] **4.1 Walk-Forward Engine** — Create `walk_forward_engine.py`. It takes a full date range and splits it into rolling windows:
+  - Train on months 1–12 → Trade on months 13–15
+  - Train on months 4–15 → Trade on months 16–18
+  - Stitch the "traded" segments into one realistic equity curve.
+  - Return per-window metrics alongside the combined curve so degradation over time is visible.
+- [ ] **4.2 Fix MLRandomForest with WFO** — Replace the V1 full-dataset training with the walk-forward engine. Each window trains a fresh model only on in-sample data, then predicts out-of-sample. This eliminates data leakage entirely.
+- [ ] **4.3 Pairs Trading Strategy** — Create `StatArbitrageStrategy` in `strategies.py`. Use `statsmodels` to test for cointegration between two tickers (e.g., AAPL/MSFT). Trade the spread: go long the cheap leg, short the expensive leg when the spread diverges by >2 standard deviations.
+- [ ] **4.4 Improved ML features** — Upgrade `MLRandomForest` with additional features: RSI (14), MACD signal line, ATR (14 days), day-of-week, volume ratio (today/5-day average). Add feature importance output to the API response.
+
+---
+
+### Phase 5: OANDA API Integration
+
+- [ ] **5.1 OANDA account setup** — Create a free OANDA Practice Account and generate an API token. Add credentials to `.env` as `OANDA_ACCOUNT_ID` and `OANDA_API_KEY`. Never commit these.
+- [ ] **5.2 Execution handler** — Create `execution_handler.py` using the `oandapyV20` library. Implement:
+  - `get_live_candles(instrument, count, granularity)` — fetch the last N candles
+  - `get_account_summary()` — returns balance, margin used, open positions
+  - `place_market_order(instrument, units, direction)` — send a market order
+  - `close_position(instrument)` — flatten an open position
+  - `get_open_positions()` — list all current positions with unrealised P&L
+- [ ] **5.3 Kill switch** — Implement `close_all_positions()` in `execution_handler.py`. This calls `close_position()` for every open trade. Expose it as `POST /api/live/kill_switch`. This endpoint must work even if the main bot loop is erroring.
+- [ ] **5.4 Validation endpoint** — Add `GET /api/live/account` to verify the OANDA connection and return account balance. Use this to confirm credentials are working before starting the bot.
+
+---
+
+### Phase 6: The Live Trading Bot
+
+- [ ] **6.1 Bot script** — Create `live_bot.py`. Use Python's `asyncio` for the main event loop. Core loop runs every 15 minutes (configurable).
+- [ ] **6.2 Event loop logic**:
+  ```
+  On every tick (15min):
+  1. Fetch last 100 candles from OANDA (execution_handler.get_live_candles)
+  2. Run the chosen strategy on this data
+  3. Get current open positions from OANDA
+  4. Compare strategy signal vs current position:
+     - Signal=LONG, no position → place BUY order
+     - Signal=SHORT, no position → place SELL order
+     - Signal=FLAT, position open → close position
+     - Signal matches position → do nothing
+  5. Log everything to DB (LiveTradeRecord table)
+  ```
+- [ ] **6.3 Structured logging** — Use Python's `logging` module. Log to both console and a rotating file (`logs/bot.log`). Every heartbeat, every signal decision, every order placement and fill must be logged with timestamp. If a trade errors, the exception must be logged before the loop continues.
+- [ ] **6.4 Risk guard** — Before placing any order, check: (a) account balance is above a minimum threshold (configurable), (b) number of open positions is below a maximum (configurable). If either check fails, log a warning and skip the order.
+- [ ] **6.5 Bot control endpoints** — Add FastAPI endpoints:
+  - `POST /api/live/start` — starts the bot loop in a background thread
+  - `POST /api/live/stop` — graceful shutdown (completes current tick, then stops)
+  - `GET /api/live/status` — returns: running/stopped, current strategy, last heartbeat timestamp, open positions
+
+---
+
+### Phase 7: Dashboard V2 (Command Centre)
+
+- [ ] **7.1 Mode toggle** — Add a `[ Backtest | Live ]` toggle to the sidebar header. Switching modes changes which panels and controls are visible.
+- [ ] **7.2 Backtest history panel** — In Backtest mode, add a "Past Runs" section that fetches from `GET /api/backtests` and lists previous runs with their key metrics. Clicking a row loads that run's results without re-running the backtest.
+- [ ] **7.3 Live mode dashboard** — In Live mode, replace the backtest controls with:
+  - Account summary card (balance, margin used, equity)
+  - Active open positions table (instrument, direction, units, unrealised P&L — auto-refreshing every 30s)
+  - Bot status indicator (running/stopped, last heartbeat)
+  - Start / Stop bot buttons (connected to the control endpoints)
+- [ ] **7.4 Kill switch button** — Large red "LIQUIDATE ALL" button in Live mode. On click, shows a confirmation modal before calling `POST /api/live/kill_switch`. Display success/failure feedback immediately.
+- [ ] **7.5 Live equity ticker** — Poll `GET /api/live/account` every 60s and display a live-updating account equity value at the top of the sidebar.
+
+---
+
+### Phase 8: Infrastructure (Docker + Cloud)
+
+> This phase only starts once Phase 6 (live bot) is working correctly on local.
+
+- [ ] **8.1 Dockerfile — Backend** — Write a `Dockerfile` for the FastAPI app. Base image: `python:3.11-slim`. Copy `requirements.txt`, install deps, copy source, run with `uvicorn`.
+- [ ] **8.2 Dockerfile — Frontend** — Write a multi-stage `Dockerfile`: build stage uses `node:20`, production stage serves the Vite build via `nginx:alpine`.
+- [ ] **8.3 docker-compose.yml** — Compose file with three services: `backend`, `frontend`, `db` (PostgreSQL for production). Include environment variable injection for OANDA credentials from `.env`.
+- [ ] **8.4 Migrate to PostgreSQL** — Swap the SQLite engine in `database.py` for a PostgreSQL connection string (env var). SQLAlchemy abstracts this — only the connection string changes.
+- [ ] **8.5 Cloud deployment** — Deploy the Docker Compose stack to an AWS EC2 `t3.micro` instance. The bot must run 24/7 without the local machine being on. Set up basic CloudWatch alerts for bot crashes.
+
+---
+
+## 5. V2 Dependency Map
+
+```
+Phase 0 (Fixes)
+    ↓
+Phase 1 (Data)  →  Phase 2 (DB)
+                        ↓
+               Phase 3 (Costs)
+                        ↓
+               Phase 4 (WFO + Strategies)
+                        ↓
+               Phase 5 (OANDA)
+                        ↓
+               Phase 6 (Live Bot)
+                        ↓
+               Phase 7 (Dashboard V2)
+                        ↓
+               Phase 8 (Docker + Cloud)
+```
+
+Phase 1 (Data) and Phase 2 (DB) can be built in parallel. Everything from Phase 3 onward is sequential.
+
+---
+
+## 6. Technical Decisions
+
+| Decision | Choice | Reason |
+|----------|--------|--------|
+| Database | SQLite → PostgreSQL | SQLite for zero-setup local dev; migrate when Dockerizing |
+| ORM | SQLAlchemy | Works with both SQLite and PostgreSQL; well-supported |
+| Live data | OANDA API (oandapyV20) | Free paper account; supports Forex and CFDs; REST + streaming |
+| Bot scheduler | Python asyncio | Built-in; cleaner than `schedule` for async I/O with OANDA |
+| Containerization | Docker + docker-compose | Standard; enables cloud deployment on any VPS |
+| Secrets | `.env` + `python-dotenv` | Already in `.gitignore`; never hardcode credentials |
+
+---
+
+## 7. Risk & Safety Rules (Non-Negotiable)
+
+1. **Never commit `.env`** — OANDA credentials live only in `.env`, which is in `.gitignore`.
+2. **Kill switch first** — `close_all_positions()` must be implemented and tested *before* `place_market_order()` is ever called from the live bot.
+3. **Paper trading only** — The bot will target the OANDA *Practice* environment only. Switching to the Live environment requires a deliberate code change and is out of scope for V2.
+4. **Maximum position size** — Hard-code a maximum of 1,000 units per order until the bot has been running without errors for 30+ days.
+5. **DB before live** — Phase 2 (persistence) must be complete before Phase 6 (live bot). Running a live bot without logging trade state to a DB is not acceptable.
