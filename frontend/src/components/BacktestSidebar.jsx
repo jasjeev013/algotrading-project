@@ -6,6 +6,7 @@ const BacktestSidebar = ({
   endDate, setEndDate,
   strategy, setStrategy,
   capital, setCapital,
+  dataInterval, setDataInterval,
   strategyParams, setStrategyParams,
   loading, onRun,
 }) => {
@@ -27,6 +28,26 @@ const BacktestSidebar = ({
             <label>End Date</label>
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           </div>
+        </div>
+
+        <div className="input-group" style={{ animationDelay: '0.07s' }}>
+          <label>Data Interval</label>
+          <select value={dataInterval} onChange={(e) => setDataInterval(e.target.value)}>
+            <optgroup label="Daily+">
+              <option value="1d">1 Day</option>
+              <option value="1wk">1 Week</option>
+              <option value="1mo">1 Month</option>
+            </optgroup>
+            <optgroup label="Intraday (max 60 days history)">
+              <option value="5m">5 Minutes</option>
+              <option value="15m">15 Minutes</option>
+            </optgroup>
+          </select>
+          {['5m', '15m'].includes(dataInterval) && (
+            <p className="field-hint">
+              Yahoo Finance only provides ~60 days of intraday history. Set your Start Date accordingly.
+            </p>
+          )}
         </div>
       </div>
 

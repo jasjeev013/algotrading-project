@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import axios from 'axios'
 import TopBar from './components/TopBar'
+import RegimeHeader from './components/RegimeHeader'
 import BacktestSidebar from './components/BacktestSidebar'
 import LiveSidebar from './components/LiveSidebar'
 import TradingChart from './components/TradingChart'
@@ -25,6 +26,7 @@ function App() {
   const [endDate, setEndDate] = useState("2023-01-01")
   const [strategy, setStrategy] = useState("SMA")
   const [capital, setCapital] = useState(10000)
+  const [dataInterval, setDataInterval] = useState("1d")
   const [strategyParams, setStrategyParams] = useState(DEFAULT_PARAMS)
 
   const [loading, setLoading] = useState(false)
@@ -65,6 +67,14 @@ function App() {
       setError("Initial Capital must be greater than 0.");
       return;
     }
+    if (['5m', '15m'].includes(dataInterval)) {
+      const rangeMs = new Date(endDate) - new Date(startDate)
+      const sixtyDaysMs = 60 * 24 * 60 * 60 * 1000
+      if (rangeMs > sixtyDaysMs) {
+        setError("Intraday intervals only support up to 60 days of history. Please narrow your date range.");
+        return;
+      }
+    }
 
     setLoading(true)
     setError(null)
@@ -74,7 +84,7 @@ function App() {
       ticker: ticker,
       start_date: startDate,
       end_date: endDate,
-      interval: "1d",
+      interval: dataInterval,
       strategy: strategy,
       strategy_params: buildParamsForStrategy(),
       initial_capital: parseFloat(capital),
@@ -109,6 +119,7 @@ function App() {
   return (
     <div className="app-shell">
       <TopBar mode={mode} />
+      <RegimeHeader />
 
       <div className="dashboard-container">
         {/* SIDEBAR */}
@@ -135,6 +146,7 @@ function App() {
               endDate={endDate} setEndDate={setEndDate}
               strategy={strategy} setStrategy={setStrategy}
               capital={capital} setCapital={setCapital}
+              dataInterval={dataInterval} setDataInterval={setDataInterval}
               strategyParams={strategyParams} setStrategyParams={setStrategyParams}
               loading={loading}
               onRun={runBacktest}

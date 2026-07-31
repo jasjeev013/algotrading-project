@@ -5,6 +5,7 @@ from data_fetcher import fetch_historical_data
 from strategies import SMACrossover, BollingerBands, MLRandomForest
 from backtester import run_iterative_backtest
 from analytics import calculate_metrics
+from market_regime import get_current_regime
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from data_fetcher import fetch_historical_data
@@ -61,6 +62,27 @@ def get_market_data(
         raise HTTPException(status_code=404, detail=str(ve))
     except Exception as e:
         # Return a 500 Internal Server Error for everything else
+        raise HTTPException(status_code=500, detail=str(e))
+
+# NEW ENDPOINT: GET /api/regime
+class RegimeResponse(BaseModel):
+    regime: str
+    spy_price: float
+    spy_daily_change_pct: float
+    spy_trend: str
+    vix_level: float
+    as_of: str
+
+@app.get("/api/regime", response_model=RegimeResponse)
+def get_market_regime():
+    """
+    API Endpoint to fetch current market regime (SPY trend + VIX level classification).
+    """
+    try:
+        return get_current_regime()
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # Create a Pydantic model to validate the incoming JSON payload from the frontend
