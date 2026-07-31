@@ -13,12 +13,12 @@ const TradingChart = ({ priceData, tradeLog }) => {
             width: chartContainerRef.current.clientWidth,
             height: 400,
             layout: {
-                background: { color: '#1e1e1e' },
-                textColor: '#d1d4dc',
+                background: { color: 'transparent' },
+                textColor: '#92a0b8',
             },
             grid: {
-                vertLines: { color: '#2B2B43' },
-                horzLines: { color: '#2B2B43' },
+                vertLines: { color: '#1b212c' },
+                horzLines: { color: '#1b212c' },
             },
             crosshair: {
                 mode: CrosshairMode.Normal,
@@ -26,6 +26,10 @@ const TradingChart = ({ priceData, tradeLog }) => {
             timeScale: {
                 timeVisible: true,
                 secondsVisible: false,
+                borderColor: '#232a38',
+            },
+            rightPriceScale: {
+                borderColor: '#232a38',
             },
         });
         chartRef.current = chart;
@@ -80,7 +84,7 @@ const TradingChart = ({ priceData, tradeLog }) => {
         };
     }, [priceData, tradeLog]);
 
-    return <div ref={chartContainerRef} style={{ position: 'relative', width: '100%', border: '1px solid #333', borderRadius: '8px', overflow: 'hidden' }} />;
+    return <div ref={chartContainerRef} style={{ position: 'relative', width: '100%', border: '1px solid #1b212c', borderRadius: '10px', overflow: 'hidden' }} />;
 };
 
 export default TradingChart;

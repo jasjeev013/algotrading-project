@@ -85,39 +85,43 @@ class MLRandomForest(BaseStrategy):
     """
     Machine Learning momentum predictor.
     Uses basic feature engineering (past returns & volatility) to predict if tomorrow's return is positive.
+
+    Trains only on the first `train_split` fraction of the window (default 70%) and only trades
+    (predicts) on the remaining out-of-sample fraction, so the equity curve never reflects a
+    decision informed by data from its own future. No position is taken during the training window.
     """
     def generate_signals(self) -> pd.DataFrame:
-        # Note: In a real-world scenario, you MUST use train_test_split. 
-        # For this V1 architecture demo, we are training on the dataset to generate historical signals.
+        train_split = float(self.params.get('train_split', 0.7))
         df = self.data.copy()
-        
+
         # 1. Feature Engineering
         df['returns'] = df['close'].pct_change()
         df['mom_3d'] = df['close'].pct_change(periods=3)
         df['mom_5d'] = df['close'].pct_change(periods=5)
         df['volatility_5d'] = df['returns'].rolling(window=5).std()
-        
+
         # 2. Define Target (1 if tomorrow's price is higher than today, else -1)
         df['target'] = np.where(df['close'].shift(-1) > df['close'], 1, -1)
-        
+
         # Drop rows with NaN values (created by rolling windows and shifts)
         clean_df = df.dropna().copy()
-        
+
         features = ['returns', 'mom_3d', 'mom_5d', 'volatility_5d']
-        X = clean_df[features]
-        y = clean_df['target']
-        
-        # 3. Train Model
+
+        # 3. Time-based train/test split (train on the earlier segment only)
+        split_idx = int(len(clean_df) * train_split)
+        train_df = clean_df.iloc[:split_idx]
+        test_df = clean_df.iloc[split_idx:]
+
+        # 4. Train Model on in-sample data only
         model = RandomForestClassifier(n_estimators=100, random_state=42)
-        model.fit(X, y)
-        
-        # 4. Predict
-        clean_df['position'] = model.predict(X)
-        
-        # Re-merge the predictions back to the original dataframe length
-        df['position'] = clean_df['position']
-        df['position'] = df['position'].fillna(0) # Fill the NaN rows we dropped earlier
-        
+        model.fit(train_df[features], train_df['target'])
+
+        # 5. Predict only on out-of-sample data
+        df['position'] = 0.0
+        if len(test_df) > 0:
+            df.loc[test_df.index, 'position'] = model.predict(test_df[features])
+
         df['signal'] = df['position'].diff().fillna(0)
-        
+
         return df
