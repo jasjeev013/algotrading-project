@@ -33,7 +33,12 @@
 
   --ease: ease;
 
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
   color-scheme: dark;
 }
 
@@ -47,14 +52,21 @@ body {
   color: var(--text-primary);
 }
 
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 20px;
   border: 2px solid var(--bg-1);
 }
-::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
 
 /* =========================================================
    Shell layout
@@ -200,9 +212,15 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.regime-value.vix-green { color: var(--accent); }
-.regime-value.vix-yellow { color: var(--warning); }
-.regime-value.vix-red { color: var(--danger); }
+.regime-value.vix-green {
+  color: var(--accent);
+}
+.regime-value.vix-yellow {
+  color: var(--warning);
+}
+.regime-value.vix-red {
+  color: var(--danger);
+}
 
 .regime-badge {
   font-size: 11px;
@@ -263,7 +281,9 @@ body {
   font-weight: 600;
   padding: 8px 0;
   cursor: pointer;
-  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+  transition:
+    background 0.15s var(--ease),
+    color 0.15s var(--ease);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -271,9 +291,13 @@ body {
   border-right: 1px solid var(--border);
 }
 
-.mode-tab:last-child { border-right: none; }
+.mode-tab:last-child {
+  border-right: none;
+}
 
-.mode-tab:hover { color: var(--text-primary); }
+.mode-tab:hover {
+  color: var(--text-primary);
+}
 
 .mode-tab.active {
   background: var(--bg-3);
@@ -287,8 +311,12 @@ body {
   background: var(--text-muted);
 }
 
-.mode-tab.active.backtest .dot { background: var(--accent); }
-.mode-tab.active.live .dot { background: var(--live); }
+.mode-tab.active.backtest .dot {
+  background: var(--accent);
+}
+.mode-tab.active.live .dot {
+  background: var(--live);
+}
 
 .sidebar-section-title {
   font-size: 11px;
@@ -337,10 +365,15 @@ body {
 .input-group select {
   appearance: none;
   -webkit-appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%),
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%),
     linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
-  background-position: calc(100% - 16px) center, calc(100% - 11px) center;
-  background-size: 5px 5px, 5px 5px;
+  background-position:
+    calc(100% - 16px) center,
+    calc(100% - 11px) center;
+  background-size:
+    5px 5px,
+    5px 5px;
   background-repeat: no-repeat;
   cursor: pointer;
   padding-right: 30px;
@@ -441,7 +474,9 @@ button.run-btn:disabled {
   border-top: 1px solid var(--border);
 }
 
-.live-preview-row:first-of-type { border-top: none; }
+.live-preview-row:first-of-type {
+  border-top: none;
+}
 
 .live-note {
   font-size: 12px;
@@ -519,8 +554,12 @@ button.kill-btn {
   color: var(--text-primary);
 }
 
-.positive { color: var(--accent); }
-.negative { color: var(--danger); }
+.positive {
+  color: var(--accent);
+}
+.negative {
+  color: var(--danger);
+}
 
 .error-message {
   color: var(--danger);
@@ -564,7 +603,8 @@ table {
   text-align: left;
 }
 
-th, td {
+th,
+td {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   font-size: 12.5px;
@@ -612,8 +652,12 @@ tbody tr:last-child td {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-state {

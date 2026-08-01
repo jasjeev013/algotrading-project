@@ -1,38 +1,62 @@
-import StrategyParamsFields from './StrategyParamsFields'
+import StrategyParamsFields from "./StrategyParamsFields";
 
 const BacktestSidebar = ({
-  ticker, setTicker,
-  startDate, setStartDate,
-  endDate, setEndDate,
-  strategy, setStrategy,
-  capital, setCapital,
-  dataInterval, setDataInterval,
-  strategyParams, setStrategyParams,
-  loading, onRun,
+  ticker,
+  setTicker,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
+  strategy,
+  setStrategy,
+  capital,
+  setCapital,
+  dataInterval,
+  setDataInterval,
+  strategyParams,
+  setStrategyParams,
+  loading,
+  onRun,
 }) => {
   return (
     <>
       <div>
         <div className="sidebar-section-title">Instrument</div>
-        <div className="input-group" style={{ animationDelay: '0.02s' }}>
+        <div className="input-group" style={{ animationDelay: "0.02s" }}>
           <label>Ticker Symbol</label>
-          <input type="text" value={ticker} onChange={(e) => setTicker(e.target.value)} placeholder="AAPL" />
+          <input
+            type="text"
+            value={ticker}
+            onChange={(e) => setTicker(e.target.value)}
+            placeholder="AAPL"
+          />
         </div>
 
         <div className="input-row">
-          <div className="input-group" style={{ animationDelay: '0.04s' }}>
+          <div className="input-group" style={{ animationDelay: "0.04s" }}>
             <label>Start Date</label>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
           </div>
-          <div className="input-group" style={{ animationDelay: '0.06s' }}>
+          <div className="input-group" style={{ animationDelay: "0.06s" }}>
             <label>End Date</label>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
           </div>
         </div>
 
-        <div className="input-group" style={{ animationDelay: '0.07s' }}>
+        <div className="input-group" style={{ animationDelay: "0.07s" }}>
           <label>Data Interval</label>
-          <select value={dataInterval} onChange={(e) => setDataInterval(e.target.value)}>
+          <select
+            value={dataInterval}
+            onChange={(e) => setDataInterval(e.target.value)}
+          >
             <optgroup label="Daily+">
               <option value="1d">1 Day</option>
               <option value="1wk">1 Week</option>
@@ -43,9 +67,10 @@ const BacktestSidebar = ({
               <option value="15m">15 Minutes</option>
             </optgroup>
           </select>
-          {['5m', '15m'].includes(dataInterval) && (
+          {["5m", "15m"].includes(dataInterval) && (
             <p className="field-hint">
-              Yahoo Finance only provides ~60 days of intraday history. Set your Start Date accordingly.
+              Yahoo Finance only provides ~60 days of intraday history. Set your
+              Start Date accordingly.
             </p>
           )}
         </div>
@@ -53,31 +78,42 @@ const BacktestSidebar = ({
 
       <div>
         <div className="sidebar-section-title">Strategy</div>
-        <div className="input-group" style={{ animationDelay: '0.08s' }}>
+        <div className="input-group" style={{ animationDelay: "0.08s" }}>
           <label>Model</label>
-          <select value={strategy} onChange={(e) => setStrategy(e.target.value)}>
+          <select
+            value={strategy}
+            onChange={(e) => setStrategy(e.target.value)}
+          >
             <option value="SMA">SMA Crossover</option>
             <option value="Bollinger">Bollinger Bands</option>
             <option value="ML">Machine Learning (RF)</option>
           </select>
         </div>
 
-        <StrategyParamsFields strategy={strategy} params={strategyParams} onChange={setStrategyParams} />
+        <StrategyParamsFields
+          strategy={strategy}
+          params={strategyParams}
+          onChange={setStrategyParams}
+        />
       </div>
 
       <div>
         <div className="sidebar-section-title">Capital</div>
-        <div className="input-group" style={{ animationDelay: '0.1s' }}>
+        <div className="input-group" style={{ animationDelay: "0.1s" }}>
           <label>Initial Capital ($)</label>
-          <input type="number" value={capital} onChange={(e) => setCapital(e.target.value)} />
+          <input
+            type="number"
+            value={capital}
+            onChange={(e) => setCapital(e.target.value)}
+          />
         </div>
       </div>
 
       <button className="run-btn" onClick={onRun} disabled={loading}>
-        {loading ? 'Running Test…' : 'Run Backtest'}
+        {loading ? "Running Test…" : "Run Backtest"}
       </button>
     </>
-  )
-}
+  );
+};
 
-export default BacktestSidebar
+export default BacktestSidebar;

@@ -9,7 +9,9 @@ VIX_LOW_THRESHOLD = 20.0
 VIX_HIGH_THRESHOLD = 30.0
 
 
-def _fetch_recent_daily(ticker: str, lookback_days: int = TREND_LOOKBACK_DAYS) -> pd.DataFrame:
+def _fetch_recent_daily(
+    ticker: str, lookback_days: int = TREND_LOOKBACK_DAYS
+) -> pd.DataFrame:
     """
     Fetches recent daily OHLCV for a single ticker as a raw DataFrame, for
     rolling-mean math. Kept separate from data_fetcher.fetch_historical_data,
@@ -54,8 +56,14 @@ def get_current_regime() -> dict:
         vix_df = _fetch_recent_daily(VIX_TICKER)
 
         spy_latest_close = float(spy_df["Close"].iloc[-1])
-        spy_prev_close = float(spy_df["Close"].iloc[-2]) if len(spy_df) > 1 else spy_latest_close
-        spy_daily_change_pct = ((spy_latest_close - spy_prev_close) / spy_prev_close) * 100 if spy_prev_close else 0.0
+        spy_prev_close = (
+            float(spy_df["Close"].iloc[-2]) if len(spy_df) > 1 else spy_latest_close
+        )
+        spy_daily_change_pct = (
+            ((spy_latest_close - spy_prev_close) / spy_prev_close) * 100
+            if spy_prev_close
+            else 0.0
+        )
 
         vix_latest = float(vix_df["Close"].iloc[-1])
         spy_trend = _classify_spy_trend(spy_df)
