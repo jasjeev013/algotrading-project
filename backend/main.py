@@ -1,16 +1,24 @@
 from pydantic import BaseModel
 from typing import Dict, Any
+from sqlalchemy.orm import Session
 
 from data_fetcher import fetch_historical_data
 from strategies import SMACrossover, BollingerBands, MLRandomForest
 from backtester import run_iterative_backtest
 from analytics import calculate_metrics
 from market_regime import get_current_regime
-from fastapi import FastAPI, HTTPException, Query
+from database import get_db, init_db
+from models import BacktestRun, TradeRecord
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from data_fetcher import fetch_historical_data
 
 app = FastAPI(title="QuantDash API")
+
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 # Allow React frontend to talk to FastAPI
 app.add_middleware(
@@ -103,7 +111,7 @@ class BacktestRequest(BaseModel):
 
 
 @app.post("/api/backtest")
-def run_backtest(request: BacktestRequest):
+def run_backtest(request: BacktestRequest, db: Session = Depends(get_db)):
     try:
         # 1. Fetch Data
         raw_data = fetch_historical_data(
@@ -145,9 +153,41 @@ def run_backtest(request: BacktestRequest):
             orient="records"
         )
 
-        # 5. Return everything nicely packaged!
+        # 5. Persist the run and its trades to the DB
+        run = BacktestRun(
+            ticker=request.ticker.upper(),
+            strategy=request.strategy,
+            interval=request.interval,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            initial_capital=request.initial_capital,
+            commission_pct=request.commission_pct,
+            strategy_params=request.strategy_params,
+            metrics=metrics,
+        )
+        db.add(run)
+        db.flush()  # populate run.id before creating trades
+
+        for trade in trade_log:
+            db.add(
+                TradeRecord(
+                    backtest_run_id=run.id,
+                    type=trade["type"],
+                    entry_date=str(trade["entry_date"]),
+                    exit_date=str(trade["exit_date"]),
+                    entry_price=trade["entry_price"],
+                    exit_price=trade["exit_price"],
+                    profit_loss=trade["profit_loss"],
+                    net_return_pct=trade["net_return_pct"],
+                    equity_after=trade["equity_after"],
+                )
+            )
+        db.commit()
+
+        # 6. Return everything nicely packaged!
         return {
             "status": "success",
+            "run_id": run.id,
             "metrics": metrics,
             "equity_curve": equity_curve,
             "trade_log": trade_log[::-1],  # Reverse list so newest trades are at top
@@ -156,3 +196,62 @@ def run_backtest(request: BacktestRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/backtests")
+def list_backtests(db: Session = Depends(get_db)):
+    """
+    List past backtest runs, most recent first.
+    """
+    runs = db.query(BacktestRun).order_by(BacktestRun.created_at.desc()).all()
+    return {
+        "status": "success",
+        "runs": [
+            {
+                "run_id": run.id,
+                "ticker": run.ticker,
+                "strategy": run.strategy,
+                "interval": run.interval,
+                "start_date": run.start_date,
+                "end_date": run.end_date,
+                "created_at": run.created_at.isoformat() if run.created_at else None,
+                "metrics": run.metrics,
+            }
+            for run in runs
+        ],
+    }
+
+
+@app.get("/api/backtests/{run_id}")
+def get_backtest(run_id: int, db: Session = Depends(get_db)):
+    """
+    Fetch a single past backtest run and its trades, reshaped to match
+    the POST /api/backtest response envelope (minus equity_curve/price_data,
+    which are not persisted).
+    """
+    run = db.query(BacktestRun).filter(BacktestRun.id == run_id).first()
+    if run is None:
+        raise HTTPException(status_code=404, detail="Backtest run not found.")
+
+    trade_log = [
+        {
+            "type": trade.type,
+            "entry_date": trade.entry_date,
+            "exit_date": trade.exit_date,
+            "entry_price": trade.entry_price,
+            "exit_price": trade.exit_price,
+            "profit_loss": trade.profit_loss,
+            "net_return_pct": trade.net_return_pct,
+            "equity_after": trade.equity_after,
+        }
+        for trade in run.trades
+    ]
+
+    return {
+        "status": "success",
+        "run_id": run.id,
+        "ticker": run.ticker,
+        "strategy": run.strategy,
+        "metrics": run.metrics,
+        "trade_log": trade_log[::-1],
+    }

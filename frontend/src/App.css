@@ -24,6 +24,10 @@
   --live-bg: rgba(59, 143, 214, 0.08);
   --live-border: rgba(59, 143, 214, 0.4);
 
+  --history: #a3874e;
+  --history-bg: rgba(163, 135, 78, 0.08);
+  --history-border: rgba(163, 135, 78, 0.4);
+
   --danger: #d9534f;
   --danger-bg: rgba(217, 83, 79, 0.08);
   --warning: #c9922a;
@@ -264,10 +268,10 @@ body {
   gap: 20px;
 }
 
-/* Mode tabs (Backtest / Live) */
+/* Mode tabs (Backtest / Live / History) */
 .mode-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
@@ -277,7 +281,7 @@ body {
   border: none;
   background: var(--bg-2);
   color: var(--text-secondary);
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 600;
   padding: 8px 0;
   cursor: pointer;
@@ -287,7 +291,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
+  white-space: nowrap;
   border-right: 1px solid var(--border);
 }
 
@@ -316,6 +321,9 @@ body {
 }
 .mode-tab.active.live .dot {
   background: var(--live);
+}
+.mode-tab.active.history .dot {
+  background: var(--history);
 }
 
 .sidebar-section-title {

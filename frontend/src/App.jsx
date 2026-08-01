@@ -4,9 +4,13 @@ import TopBar from "./components/TopBar";
 import RegimeHeader from "./components/RegimeHeader";
 import BacktestSidebar from "./components/BacktestSidebar";
 import LiveSidebar from "./components/LiveSidebar";
+import HistorySidebar from "./components/HistorySidebar";
+import HistoryPanel from "./components/HistoryPanel";
 import TradingChart from "./components/TradingChart";
 import EquityCurveChart from "./components/EquityCurveChart";
 import "./App.css";
+
+const API_BASE = "http://localhost:8000";
 
 const DEFAULT_PARAMS = {
   short_window: 20,
@@ -32,6 +36,11 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
+
+  // --- HISTORY ---
+  const [historyRuns, setHistoryRuns] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(null);
 
   const buildParamsForStrategy = () => {
     if (strategy === "SMA") {
@@ -94,10 +103,7 @@ function App() {
     };
 
     try {
-      const response = await axios.post(
-        "http://localhost:8000/api/backtest",
-        payload,
-      );
+      const response = await axios.post(`${API_BASE}/api/backtest`, payload);
       setResults(response.data);
     } catch (err) {
       setError(
@@ -105,6 +111,45 @@ function App() {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    setHistoryError(null);
+    try {
+      const response = await axios.get(`${API_BASE}/api/backtests`);
+      setHistoryRuns(response.data.runs || []);
+    } catch (err) {
+      setHistoryError(
+        err.response?.data?.detail || "Error fetching backtest history.",
+      );
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const loadHistoricalRun = async (runId) => {
+    setLoading(true);
+    setError(null);
+    setResults(null);
+    setMode("backtest");
+    try {
+      const response = await axios.get(`${API_BASE}/api/backtests/${runId}`);
+      setResults(response.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail || "Error loading saved backtest run.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleModeChange = (nextMode) => {
+    setMode(nextMode);
+    if (nextMode === "history") {
+      fetchHistory();
     }
   };
 
@@ -135,15 +180,21 @@ function App() {
           <div className="mode-tabs">
             <button
               className={`mode-tab backtest ${mode === "backtest" ? "active" : ""}`}
-              onClick={() => setMode("backtest")}
+              onClick={() => handleModeChange("backtest")}
             >
               <span className="dot" /> Backtest
             </button>
             <button
               className={`mode-tab live ${mode === "live" ? "active" : ""}`}
-              onClick={() => setMode("live")}
+              onClick={() => handleModeChange("live")}
             >
               <span className="dot" /> Live
+            </button>
+            <button
+              className={`mode-tab history ${mode === "history" ? "active" : ""}`}
+              onClick={() => handleModeChange("history")}
+            >
+              <span className="dot" /> History
             </button>
           </div>
 
@@ -166,8 +217,10 @@ function App() {
               loading={loading}
               onRun={runBacktest}
             />
-          ) : (
+          ) : mode === "live" ? (
             <LiveSidebar />
+          ) : (
+            <HistorySidebar onRefresh={fetchHistory} loading={historyLoading} />
           )}
         </div>
 
@@ -226,25 +279,37 @@ function App() {
                     />
                   </div>
 
-                  <div className="section-block">
-                    <h2>Price Chart & Executions</h2>
-                    <p className="section-desc">
-                      Green arrows = Buy, Red arrows = Sell Short, Orange arrows
-                      = Exit Position.
-                    </p>
-                    <TradingChart
-                      priceData={results.price_data}
-                      tradeLog={results.trade_log}
-                    />
-                  </div>
+                  {results.price_data && (
+                    <div className="section-block">
+                      <h2>Price Chart & Executions</h2>
+                      <p className="section-desc">
+                        Green arrows = Buy, Red arrows = Sell Short, Orange
+                        arrows = Exit Position.
+                      </p>
+                      <TradingChart
+                        priceData={results.price_data}
+                        tradeLog={results.trade_log}
+                      />
+                    </div>
+                  )}
 
-                  <div className="section-block">
-                    <h2>Equity Curve</h2>
-                    <p className="section-desc">
-                      Portfolio value over the backtest window.
+                  {results.equity_curve && (
+                    <div className="section-block">
+                      <h2>Equity Curve</h2>
+                      <p className="section-desc">
+                        Portfolio value over the backtest window.
+                      </p>
+                      <EquityCurveChart equityCurve={results.equity_curve} />
+                    </div>
+                  )}
+
+                  {!results.price_data && (
+                    <p className="field-hint">
+                      Loaded from saved history — price and equity charts
+                      aren't stored for past runs, only metrics and the trade
+                      log.
                     </p>
-                    <EquityCurveChart equityCurve={results.equity_curve} />
-                  </div>
+                  )}
 
                   <div className="section-block">
                     <h2>Trade Log</h2>
@@ -325,7 +390,7 @@ function App() {
                 </div>
               )}
             </>
-          ) : (
+          ) : mode === "live" ? (
             <>
               <h1>Live Trading</h1>
               <p className="subtitle">
@@ -336,6 +401,20 @@ function App() {
                 Live execution ships in Phase 5–7 of the V2 roadmap. Switch back
                 to Backtest to run a historical simulation.
               </div>
+            </>
+          ) : (
+            <>
+              <h1>Backtest History</h1>
+              <p className="subtitle">
+                Past runs saved to the database. Click a row to reload its
+                results.
+              </p>
+              <HistoryPanel
+                runs={historyRuns}
+                loading={historyLoading}
+                error={historyError}
+                onSelectRun={loadHistoricalRun}
+              />
             </>
           )}
         </div>
