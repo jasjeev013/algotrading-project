@@ -33,6 +33,12 @@ function App() {
   const [dataInterval, setDataInterval] = useState("1d");
   const [strategyParams, setStrategyParams] = useState(DEFAULT_PARAMS);
 
+  // --- COSTS (displayed as %, converted to decimals when sent to the API) ---
+  const [commissionPct, setCommissionPct] = useState(0.1);
+  const [spreadPct, setSpreadPct] = useState(0.02);
+  const [slippagePct, setSlippagePct] = useState(0.01);
+  const [financingPct, setFinancingPct] = useState(0);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
@@ -99,7 +105,10 @@ function App() {
       strategy: strategy,
       strategy_params: buildParamsForStrategy(),
       initial_capital: parseFloat(capital),
-      commission_pct: 0.001,
+      commission_pct: parseFloat(commissionPct) / 100,
+      spread_pct: parseFloat(spreadPct) / 100,
+      slippage_pct: parseFloat(slippagePct) / 100,
+      overnight_financing_pct: parseFloat(financingPct) / 100,
     };
 
     try {
@@ -136,7 +145,22 @@ function App() {
     setMode("backtest");
     try {
       const response = await axios.get(`${API_BASE}/api/backtests/${runId}`);
-      setResults(response.data);
+      const run = response.data;
+
+      // Repopulate the sidebar with the settings this run was executed with.
+      setTicker(run.ticker);
+      setStartDate(run.start_date);
+      setEndDate(run.end_date);
+      setDataInterval(run.interval);
+      setStrategy(run.strategy);
+      setStrategyParams({ ...DEFAULT_PARAMS, ...run.strategy_params });
+      setCapital(run.initial_capital);
+      setCommissionPct(run.commission_pct * 100);
+      setSpreadPct(run.spread_pct * 100);
+      setSlippagePct(run.slippage_pct * 100);
+      setFinancingPct(run.overnight_financing_pct * 100);
+
+      setResults(run);
     } catch (err) {
       setError(
         err.response?.data?.detail || "Error loading saved backtest run.",
@@ -214,6 +238,14 @@ function App() {
               setDataInterval={setDataInterval}
               strategyParams={strategyParams}
               setStrategyParams={setStrategyParams}
+              commissionPct={commissionPct}
+              setCommissionPct={setCommissionPct}
+              spreadPct={spreadPct}
+              setSpreadPct={setSpreadPct}
+              slippagePct={slippagePct}
+              setSlippagePct={setSlippagePct}
+              financingPct={financingPct}
+              setFinancingPct={setFinancingPct}
               loading={loading}
               onRun={runBacktest}
             />

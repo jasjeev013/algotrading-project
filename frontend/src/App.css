@@ -400,6 +400,42 @@ body {
   margin-top: 6px;
 }
 
+/* Advanced Settings (collapsible costs section) */
+.advanced-settings {
+  margin-bottom: 14px;
+}
+
+.advanced-settings summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.advanced-settings summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-settings summary::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 4px solid var(--text-muted);
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  transition: transform 0.15s var(--ease);
+}
+
+.advanced-settings[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.advanced-settings summary:hover {
+  color: var(--text-primary);
+}
+
 .params-box {
   background: var(--bg-2);
   border: 1px solid var(--border);

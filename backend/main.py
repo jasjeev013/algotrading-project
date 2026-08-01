@@ -108,6 +108,9 @@ class BacktestRequest(BaseModel):
     strategy_params: Dict[str, Any] = {}
     initial_capital: float = 10000.0
     commission_pct: float = 0.001
+    spread_pct: float = 0.0002
+    slippage_pct: float = 0.0001
+    overnight_financing_pct: float = 0.0
 
 
 @app.post("/api/backtest")
@@ -139,6 +142,9 @@ def run_backtest(request: BacktestRequest, db: Session = Depends(get_db)):
             df=signal_df,
             initial_capital=request.initial_capital,
             commission_pct=request.commission_pct,
+            spread_pct=request.spread_pct,
+            slippage_pct=request.slippage_pct,
+            overnight_financing_pct=request.overnight_financing_pct,
         )
 
         # 4. Calculate Analytics Metrics
@@ -162,6 +168,9 @@ def run_backtest(request: BacktestRequest, db: Session = Depends(get_db)):
             end_date=request.end_date,
             initial_capital=request.initial_capital,
             commission_pct=request.commission_pct,
+            spread_pct=request.spread_pct,
+            slippage_pct=request.slippage_pct,
+            overnight_financing_pct=request.overnight_financing_pct,
             strategy_params=request.strategy_params,
             metrics=metrics,
         )
@@ -252,6 +261,15 @@ def get_backtest(run_id: int, db: Session = Depends(get_db)):
         "run_id": run.id,
         "ticker": run.ticker,
         "strategy": run.strategy,
+        "strategy_params": run.strategy_params,
+        "interval": run.interval,
+        "start_date": run.start_date,
+        "end_date": run.end_date,
+        "initial_capital": run.initial_capital,
+        "commission_pct": run.commission_pct,
+        "spread_pct": run.spread_pct,
+        "slippage_pct": run.slippage_pct,
+        "overnight_financing_pct": run.overnight_financing_pct,
         "metrics": run.metrics,
         "trade_log": trade_log[::-1],
     }
