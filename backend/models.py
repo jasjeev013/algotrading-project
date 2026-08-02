@@ -52,3 +52,35 @@ class TradeRecord(Base):
     equity_after = Column(Float, nullable=False)
 
     run = relationship("BacktestRun", back_populates="trades")
+
+
+class WalkForwardRun(Base):
+    """
+    Persistence for the strategy-agnostic Walk-Forward mode, kept fully
+    separate from BacktestRun/TradeRecord (a plain single full-range run).
+    The stitched trade_log is stored as a JSON blob rather than a child
+    table -- a walk-forward run's trades aren't queried individually, so a
+    relational child table would add join overhead for no benefit here.
+    """
+
+    __tablename__ = "walk_forward_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ticker = Column(String, nullable=False)
+    strategy = Column(String, nullable=False)
+    interval = Column(String, nullable=False)
+    start_date = Column(String, nullable=False)
+    end_date = Column(String, nullable=False)
+    initial_capital = Column(Float, nullable=False)
+    commission_pct = Column(Float, nullable=False)
+    spread_pct = Column(Float, nullable=False, default=0.0002)
+    slippage_pct = Column(Float, nullable=False, default=0.0001)
+    overnight_financing_pct = Column(Float, nullable=False, default=0.0)
+    train_months = Column(Integer, nullable=False)
+    trade_months = Column(Integer, nullable=False)
+    step_months = Column(Integer, nullable=False)
+    strategy_params = Column(JSON, nullable=False, default=dict)
+    metrics = Column(JSON, nullable=False, default=dict)
+    window_metrics = Column(JSON, nullable=False, default=list)
+    trade_log = Column(JSON, nullable=False, default=list)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

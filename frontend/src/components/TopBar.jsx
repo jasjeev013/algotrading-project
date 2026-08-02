@@ -35,7 +35,11 @@ const TopBar = ({ mode }) => {
         <div className="topbar-titles">
           <h1>QuantDash</h1>
           <span>
-            {mode === "live" ? "Live Execution Console" : "Backtesting Engine"}
+            {mode === "live"
+              ? "Live Execution Console"
+              : mode === "walkforward"
+                ? "Walk-Forward Validation Engine"
+                : "Backtesting Engine"}
           </span>
         </div>
       </div>

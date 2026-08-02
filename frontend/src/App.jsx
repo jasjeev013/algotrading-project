@@ -3,11 +3,15 @@ import axios from "axios";
 import TopBar from "./components/TopBar";
 import RegimeHeader from "./components/RegimeHeader";
 import BacktestSidebar from "./components/BacktestSidebar";
+import WalkForwardSidebar from "./components/WalkForwardSidebar";
 import LiveSidebar from "./components/LiveSidebar";
 import HistorySidebar from "./components/HistorySidebar";
 import HistoryPanel from "./components/HistoryPanel";
+import WalkForwardHistoryPanel from "./components/WalkForwardHistoryPanel";
 import TradingChart from "./components/TradingChart";
 import EquityCurveChart from "./components/EquityCurveChart";
+import FeatureImportancePanel from "./components/FeatureImportancePanel";
+import WalkForwardTable from "./components/WalkForwardTable";
 import "./App.css";
 
 const API_BASE = "http://localhost:8000";
@@ -18,13 +22,20 @@ const DEFAULT_PARAMS = {
   window: 20,
   num_std: 2.0,
   train_split: 0.7,
+  lookback_window: 30,
+  entry_z: 2.0,
+  exit_z: 0.5,
+  coint_pvalue_threshold: 0.05,
 };
+
+const NON_FITTING_STRATEGIES = ["SMA", "Bollinger"];
 
 function App() {
   // --- MODE ---
-  const [mode, setMode] = useState("backtest"); // 'backtest' | 'live'
+  const [mode, setMode] = useState("backtest"); // 'backtest' | 'walkforward' | 'live' | 'history'
 
-  // --- STATE MANAGEMENT ---
+  // --- SHARED STATE (instrument/strategy selection used by both Backtest and
+  // Walk-Forward tabs) ---
   const [ticker, setTicker] = useState("AAPL");
   const [startDate, setStartDate] = useState("2020-01-01");
   const [endDate, setEndDate] = useState("2023-01-01");
@@ -32,6 +43,7 @@ function App() {
   const [capital, setCapital] = useState(10000);
   const [dataInterval, setDataInterval] = useState("1d");
   const [strategyParams, setStrategyParams] = useState(DEFAULT_PARAMS);
+  const [pairTicker, setPairTicker] = useState("MSFT");
 
   // --- COSTS (displayed as %, converted to decimals when sent to the API) ---
   const [commissionPct, setCommissionPct] = useState(0.1);
@@ -43,10 +55,25 @@ function App() {
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
 
-  // --- HISTORY ---
+  // --- BACKTEST HISTORY ---
   const [historyRuns, setHistoryRuns] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(null);
+
+  // --- WALK-FORWARD (separate mode: its own settings, results, and DB-backed
+  // history, decoupled from the plain Backtest flow above) ---
+  const [wfTrainMonths, setWfTrainMonths] = useState(12);
+  const [wfTradeMonths, setWfTradeMonths] = useState(3);
+  const [wfStepMonths, setWfStepMonths] = useState("");
+  const [wfWarmupBars, setWfWarmupBars] = useState(60);
+
+  const [wfLoading, setWfLoading] = useState(false);
+  const [wfError, setWfError] = useState(null);
+  const [wfResults, setWfResults] = useState(null);
+
+  const [wfHistoryRuns, setWfHistoryRuns] = useState([]);
+  const [wfHistoryLoading, setWfHistoryLoading] = useState(false);
+  const [wfHistoryError, setWfHistoryError] = useState(null);
 
   const buildParamsForStrategy = () => {
     if (strategy === "SMA") {
@@ -66,32 +93,49 @@ function App() {
         train_split: parseFloat(strategyParams.train_split),
       };
     }
+    if (strategy === "StatArb") {
+      return {
+        lookback_window: parseInt(strategyParams.lookback_window, 10),
+        entry_z: parseFloat(strategyParams.entry_z),
+        exit_z: parseFloat(strategyParams.exit_z),
+        coint_pvalue_threshold: parseFloat(strategyParams.coint_pvalue_threshold),
+      };
+    }
     return {};
   };
 
-  const runBacktest = async () => {
+  const validateCommonInputs = (setErrorFn) => {
     if (!ticker.trim()) {
-      setError("Please enter a valid Ticker Symbol.");
-      return;
+      setErrorFn("Please enter a valid Ticker Symbol.");
+      return false;
     }
     if (new Date(startDate) >= new Date(endDate)) {
-      setError("Start Date must be before End Date.");
-      return;
+      setErrorFn("Start Date must be before End Date.");
+      return false;
     }
     if (capital <= 0) {
-      setError("Initial Capital must be greater than 0.");
-      return;
+      setErrorFn("Initial Capital must be greater than 0.");
+      return false;
+    }
+    if (strategy === "StatArb" && !pairTicker.trim()) {
+      setErrorFn("Please enter a Pair Ticker for the pairs-trading strategy.");
+      return false;
     }
     if (["5m", "15m"].includes(dataInterval)) {
       const rangeMs = new Date(endDate) - new Date(startDate);
       const sixtyDaysMs = 60 * 24 * 60 * 60 * 1000;
       if (rangeMs > sixtyDaysMs) {
-        setError(
+        setErrorFn(
           "Intraday intervals only support up to 60 days of history. Please narrow your date range.",
         );
-        return;
+        return false;
       }
     }
+    return true;
+  };
+
+  const runBacktest = async () => {
+    if (!validateCommonInputs(setError)) return;
 
     setLoading(true);
     setError(null);
@@ -104,6 +148,7 @@ function App() {
       interval: dataInterval,
       strategy: strategy,
       strategy_params: buildParamsForStrategy(),
+      ...(strategy === "StatArb" ? { pair_ticker: pairTicker.toUpperCase() } : {}),
       initial_capital: parseFloat(capital),
       commission_pct: parseFloat(commissionPct) / 100,
       spread_pct: parseFloat(spreadPct) / 100,
@@ -154,6 +199,7 @@ function App() {
       setDataInterval(run.interval);
       setStrategy(run.strategy);
       setStrategyParams({ ...DEFAULT_PARAMS, ...run.strategy_params });
+      setPairTicker(run.strategy_params?.pair_ticker || "MSFT");
       setCapital(run.initial_capital);
       setCommissionPct(run.commission_pct * 100);
       setSpreadPct(run.spread_pct * 100);
@@ -170,10 +216,103 @@ function App() {
     }
   };
 
+  const runWalkForward = async () => {
+    if (!validateCommonInputs(setWfError)) return;
+
+    setWfLoading(true);
+    setWfError(null);
+    setWfResults(null);
+
+    const payload = {
+      ticker: ticker,
+      start_date: startDate,
+      end_date: endDate,
+      interval: dataInterval,
+      strategy: strategy,
+      strategy_params: buildParamsForStrategy(),
+      ...(strategy === "StatArb" ? { pair_ticker: pairTicker.toUpperCase() } : {}),
+      initial_capital: parseFloat(capital),
+      commission_pct: parseFloat(commissionPct) / 100,
+      spread_pct: parseFloat(spreadPct) / 100,
+      slippage_pct: parseFloat(slippagePct) / 100,
+      overnight_financing_pct: parseFloat(financingPct) / 100,
+      train_months: parseInt(wfTrainMonths, 10),
+      trade_months: parseInt(wfTradeMonths, 10),
+      ...(wfStepMonths ? { step_months: parseInt(wfStepMonths, 10) } : {}),
+      ...(NON_FITTING_STRATEGIES.includes(strategy)
+        ? { warmup_bars: parseInt(wfWarmupBars, 10) }
+        : {}),
+    };
+
+    try {
+      const response = await axios.post(`${API_BASE}/api/walk-forward`, payload);
+      setWfResults(response.data);
+    } catch (err) {
+      setWfError(
+        err.response?.data?.detail || "Error connecting to the backend.",
+      );
+    } finally {
+      setWfLoading(false);
+    }
+  };
+
+  const fetchWfHistory = async () => {
+    setWfHistoryLoading(true);
+    setWfHistoryError(null);
+    try {
+      const response = await axios.get(`${API_BASE}/api/walk-forward-runs`);
+      setWfHistoryRuns(response.data.runs || []);
+    } catch (err) {
+      setWfHistoryError(
+        err.response?.data?.detail || "Error fetching walk-forward history.",
+      );
+    } finally {
+      setWfHistoryLoading(false);
+    }
+  };
+
+  const loadWfHistoricalRun = async (runId) => {
+    setWfLoading(true);
+    setWfError(null);
+    setWfResults(null);
+    setMode("walkforward");
+    try {
+      const response = await axios.get(`${API_BASE}/api/walk-forward-runs/${runId}`);
+      const run = response.data;
+
+      setTicker(run.ticker);
+      setStartDate(run.start_date);
+      setEndDate(run.end_date);
+      setDataInterval(run.interval);
+      setStrategy(run.strategy);
+      setStrategyParams({ ...DEFAULT_PARAMS, ...run.strategy_params });
+      setPairTicker(run.strategy_params?.pair_ticker || "MSFT");
+      setCapital(run.initial_capital);
+      setCommissionPct(run.commission_pct * 100);
+      setSpreadPct(run.spread_pct * 100);
+      setSlippagePct(run.slippage_pct * 100);
+      setFinancingPct(run.overnight_financing_pct * 100);
+      setWfTrainMonths(run.train_months);
+      setWfTradeMonths(run.trade_months);
+      setWfStepMonths(run.step_months);
+
+      setWfResults(run);
+    } catch (err) {
+      setWfError(
+        err.response?.data?.detail || "Error loading saved walk-forward run.",
+      );
+    } finally {
+      setWfLoading(false);
+    }
+  };
+
   const handleModeChange = (nextMode) => {
     setMode(nextMode);
     if (nextMode === "history") {
       fetchHistory();
+    }
+    if (nextMode === "walkforward") {
+      fetchWfHistory();
     }
   };
 
@@ -193,6 +332,60 @@ function App() {
     );
   };
 
+  const TradeLogTable = ({ tradeLog }) => (
+    <div className="section-block">
+      <h2>Trade Log</h2>
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Entry Date</th>
+              <th>Exit Date</th>
+              <th>Entry Price</th>
+              <th>Exit Price</th>
+              <th>P/L ($)</th>
+              <th>Return (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tradeLog.map((trade, index) => (
+              <tr key={index}>
+                <td className={trade.type === "LONG" ? "positive" : "negative"}>
+                  {trade.type}
+                </td>
+                <td>{trade.entry_date}</td>
+                <td>{trade.exit_date}</td>
+                <td>${trade.entry_price.toFixed(2)}</td>
+                <td>${trade.exit_price.toFixed(2)}</td>
+                <td className={trade.profit_loss >= 0 ? "positive" : "negative"}>
+                  ${trade.profit_loss.toFixed(2)}
+                </td>
+                <td
+                  className={
+                    trade.net_return_pct >= 0 ? "positive" : "negative"
+                  }
+                >
+                  {trade.net_return_pct.toFixed(2)}%
+                </td>
+              </tr>
+            ))}
+            {tradeLog.length === 0 && (
+              <tr>
+                <td
+                  colSpan="7"
+                  style={{ textAlign: "center", color: "var(--text-muted)" }}
+                >
+                  No trades executed during this period.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   return (
     <div className="app-shell">
       <TopBar mode={mode} />
@@ -207,6 +400,12 @@ function App() {
               onClick={() => handleModeChange("backtest")}
             >
               <span className="dot" /> Backtest
+            </button>
+            <button
+              className={`mode-tab walkforward ${mode === "walkforward" ? "active" : ""}`}
+              onClick={() => handleModeChange("walkforward")}
+            >
+              <span className="dot" /> Walk-Fwd
             </button>
             <button
               className={`mode-tab live ${mode === "live" ? "active" : ""}`}
@@ -238,6 +437,8 @@ function App() {
               setDataInterval={setDataInterval}
               strategyParams={strategyParams}
               setStrategyParams={setStrategyParams}
+              pairTicker={pairTicker}
+              setPairTicker={setPairTicker}
               commissionPct={commissionPct}
               setCommissionPct={setCommissionPct}
               spreadPct={spreadPct}
@@ -248,6 +449,43 @@ function App() {
               setFinancingPct={setFinancingPct}
               loading={loading}
               onRun={runBacktest}
+            />
+          ) : mode === "walkforward" ? (
+            <WalkForwardSidebar
+              ticker={ticker}
+              setTicker={setTicker}
+              startDate={startDate}
+              setStartDate={setStartDate}
+              endDate={endDate}
+              setEndDate={setEndDate}
+              strategy={strategy}
+              setStrategy={setStrategy}
+              capital={capital}
+              setCapital={setCapital}
+              dataInterval={dataInterval}
+              setDataInterval={setDataInterval}
+              strategyParams={strategyParams}
+              setStrategyParams={setStrategyParams}
+              pairTicker={pairTicker}
+              setPairTicker={setPairTicker}
+              trainMonths={wfTrainMonths}
+              setTrainMonths={setWfTrainMonths}
+              tradeMonths={wfTradeMonths}
+              setTradeMonths={setWfTradeMonths}
+              stepMonths={wfStepMonths}
+              setStepMonths={setWfStepMonths}
+              warmupBars={wfWarmupBars}
+              setWarmupBars={setWfWarmupBars}
+              commissionPct={commissionPct}
+              setCommissionPct={setCommissionPct}
+              spreadPct={spreadPct}
+              setSpreadPct={setSpreadPct}
+              slippagePct={slippagePct}
+              setSlippagePct={setSlippagePct}
+              financingPct={financingPct}
+              setFinancingPct={setFinancingPct}
+              loading={wfLoading}
+              onRun={runWalkForward}
             />
           ) : mode === "live" ? (
             <LiveSidebar />
@@ -343,74 +581,11 @@ function App() {
                     </p>
                   )}
 
-                  <div className="section-block">
-                    <h2>Trade Log</h2>
-                    <div className="table-container">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Type</th>
-                            <th>Entry Date</th>
-                            <th>Exit Date</th>
-                            <th>Entry Price</th>
-                            <th>Exit Price</th>
-                            <th>P/L ($)</th>
-                            <th>Return (%)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {results.trade_log.map((trade, index) => (
-                            <tr key={index}>
-                              <td
-                                className={
-                                  trade.type === "LONG"
-                                    ? "positive"
-                                    : "negative"
-                                }
-                              >
-                                {trade.type}
-                              </td>
-                              <td>{trade.entry_date}</td>
-                              <td>{trade.exit_date}</td>
-                              <td>${trade.entry_price.toFixed(2)}</td>
-                              <td>${trade.exit_price.toFixed(2)}</td>
-                              <td
-                                className={
-                                  trade.profit_loss >= 0
-                                    ? "positive"
-                                    : "negative"
-                                }
-                              >
-                                ${trade.profit_loss.toFixed(2)}
-                              </td>
-                              <td
-                                className={
-                                  trade.net_return_pct >= 0
-                                    ? "positive"
-                                    : "negative"
-                                }
-                              >
-                                {trade.net_return_pct.toFixed(2)}%
-                              </td>
-                            </tr>
-                          ))}
-                          {results.trade_log.length === 0 && (
-                            <tr>
-                              <td
-                                colSpan="7"
-                                style={{
-                                  textAlign: "center",
-                                  color: "var(--text-muted)",
-                                }}
-                              >
-                                No trades executed during this period.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  <FeatureImportancePanel
+                    featureImportance={results.feature_importance}
+                  />
+
+                  <TradeLogTable tradeLog={results.trade_log} />
                 </>
               )}
 
@@ -421,6 +596,117 @@ function App() {
                   to begin.
                 </div>
               )}
+            </>
+          ) : mode === "walkforward" ? (
+            <>
+              <h1>Walk-Forward Results</h1>
+              <p className="subtitle">
+                Rolling train/trade window validation — works for any
+                strategy, stitched into one continuous out-of-sample curve.
+              </p>
+
+              {wfError && <div className="error-message">{wfError}</div>}
+
+              {wfLoading && (
+                <div className="spinner-wrap">
+                  <div className="spinner"></div>
+                  <p>Running Walk-Forward Engine…</p>
+                </div>
+              )}
+
+              {wfResults && (
+                <>
+                  <div className="metrics-grid">
+                    <MetricCard
+                      title="Total Return"
+                      value={wfResults.metrics.total_return_pct}
+                      suffix="%"
+                      isColorCoded
+                    />
+                    <MetricCard
+                      title="CAGR"
+                      value={wfResults.metrics.cagr_pct}
+                      suffix="%"
+                      isColorCoded
+                    />
+                    <MetricCard
+                      title="Max Drawdown"
+                      value={wfResults.metrics.max_drawdown_pct}
+                      suffix="%"
+                      isColorCoded
+                    />
+                    <MetricCard
+                      title="Win Rate"
+                      value={wfResults.metrics.win_rate_pct}
+                      suffix="%"
+                    />
+                    <MetricCard
+                      title="Sharpe Ratio"
+                      value={wfResults.metrics.sharpe_ratio}
+                      isColorCoded
+                    />
+                    <MetricCard
+                      title="Total Trades"
+                      value={wfResults.metrics.total_trades}
+                    />
+                  </div>
+
+                  {wfResults.price_data && (
+                    <div className="section-block">
+                      <h2>Price Chart & Executions</h2>
+                      <p className="section-desc">
+                        Green arrows = Buy, Red arrows = Sell Short, Orange
+                        arrows = Exit Position.
+                      </p>
+                      <TradingChart
+                        priceData={wfResults.price_data}
+                        tradeLog={wfResults.trade_log}
+                      />
+                    </div>
+                  )}
+
+                  {wfResults.equity_curve && (
+                    <div className="section-block">
+                      <h2>Stitched Equity Curve</h2>
+                      <p className="section-desc">
+                        Portfolio value across all walk-forward windows,
+                        compounding continuously window to window.
+                      </p>
+                      <EquityCurveChart equityCurve={wfResults.equity_curve} />
+                    </div>
+                  )}
+
+                  {!wfResults.price_data && (
+                    <p className="field-hint">
+                      Loaded from saved history — price and equity charts
+                      aren't stored for past runs, only metrics, per-window
+                      results, and the trade log.
+                    </p>
+                  )}
+
+                  <WalkForwardTable walkForward={wfResults.walk_forward} />
+                  <FeatureImportancePanel
+                    featureImportance={wfResults.feature_importance}
+                  />
+
+                  <TradeLogTable tradeLog={wfResults.trade_log} />
+                </>
+              )}
+
+              {!wfResults && !wfLoading && !wfError && (
+                <div className="empty-state">
+                  <div className="empty-icon">🔁</div>
+                  Configure your parameters on the left and click "Run
+                  Walk-Forward" to begin.
+                </div>
+              )}
+
+              <WalkForwardHistoryPanel
+                runs={wfHistoryRuns}
+                loading={wfHistoryLoading}
+                error={wfHistoryError}
+                onSelectRun={loadWfHistoricalRun}
+              />
             </>
           ) : mode === "live" ? (
             <>

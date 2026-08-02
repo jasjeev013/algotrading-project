@@ -1,6 +1,8 @@
 import StrategyParamsFields from "./StrategyParamsFields";
 
-const BacktestSidebar = ({
+const NON_FITTING_STRATEGIES = ["SMA", "Bollinger"];
+
+const WalkForwardSidebar = ({
   ticker,
   setTicker,
   startDate,
@@ -17,6 +19,14 @@ const BacktestSidebar = ({
   setStrategyParams,
   pairTicker,
   setPairTicker,
+  trainMonths,
+  setTrainMonths,
+  tradeMonths,
+  setTradeMonths,
+  stepMonths,
+  setStepMonths,
+  warmupBars,
+  setWarmupBars,
   commissionPct,
   setCommissionPct,
   spreadPct,
@@ -77,12 +87,6 @@ const BacktestSidebar = ({
               <option value="15m">15 Minutes</option>
             </optgroup>
           </select>
-          {["5m", "15m"].includes(dataInterval) && (
-            <p className="field-hint">
-              Yahoo Finance only provides ~60 days of intraday history. Set your
-              Start Date accordingly.
-            </p>
-          )}
         </div>
       </div>
 
@@ -90,10 +94,7 @@ const BacktestSidebar = ({
         <div className="sidebar-section-title">Strategy</div>
         <div className="input-group" style={{ animationDelay: "0.08s" }}>
           <label>Model</label>
-          <select
-            value={strategy}
-            onChange={(e) => setStrategy(e.target.value)}
-          >
+          <select value={strategy} onChange={(e) => setStrategy(e.target.value)}>
             <option value="SMA">SMA Crossover</option>
             <option value="Bollinger">Bollinger Bands</option>
             <option value="ML">Machine Learning (RF)</option>
@@ -110,10 +111,6 @@ const BacktestSidebar = ({
               onChange={(e) => setPairTicker(e.target.value)}
               placeholder="MSFT"
             />
-            <p className="field-hint">
-              The second leg of the pair — the strategy trades the spread
-              between {"{Ticker Symbol}"} and this ticker.
-            </p>
           </div>
         )}
 
@@ -122,6 +119,64 @@ const BacktestSidebar = ({
           params={strategyParams}
           onChange={setStrategyParams}
         />
+      </div>
+
+      <div>
+        <div className="sidebar-section-title">Walk-Forward Settings</div>
+        <div className="input-row">
+          <div className="input-group" style={{ marginBottom: 0 }}>
+            <label>Train Months</label>
+            <input
+              type="number"
+              min="1"
+              value={trainMonths}
+              onChange={(e) => setTrainMonths(e.target.value)}
+            />
+          </div>
+          <div className="input-group" style={{ marginBottom: 0 }}>
+            <label>Trade Months</label>
+            <input
+              type="number"
+              min="1"
+              value={tradeMonths}
+              onChange={(e) => setTradeMonths(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="input-group">
+          <label>Step Months (optional)</label>
+          <input
+            type="number"
+            min="1"
+            value={stepMonths}
+            onChange={(e) => setStepMonths(e.target.value)}
+            placeholder={`Defaults to ${tradeMonths}`}
+          />
+        </div>
+
+        {NON_FITTING_STRATEGIES.includes(strategy) && (
+          <div className="input-group">
+            <label>Warm-up Bars</label>
+            <input
+              type="number"
+              min="1"
+              value={warmupBars}
+              onChange={(e) => setWarmupBars(e.target.value)}
+            />
+            <p className="field-hint">
+              Trailing history borrowed from the previous window so this
+              strategy's indicators aren't NaN at the start of each trade
+              window. Raise it if using a long SMA/Bollinger window.
+            </p>
+          </div>
+        )}
+
+        <p className="params-hint">
+          Trains on each {trainMonths}-month rolling window, then trades the
+          next {tradeMonths} months out-of-sample — repeated across the full
+          date range and stitched into one continuous equity curve, so
+          performance degradation over time is visible.
+        </p>
       </div>
 
       <div>
@@ -184,17 +239,13 @@ const BacktestSidebar = ({
             />
           </div>
         </div>
-        <p className="field-hint">
-          Fees applied per trade fill (commission, spread, slippage) and per
-          calendar day a position is held (overnight financing).
-        </p>
       </details>
 
       <button className="run-btn" onClick={onRun} disabled={loading}>
-        {loading ? "Running Test…" : "Run Backtest"}
+        {loading ? "Running Walk-Forward…" : "Run Walk-Forward"}
       </button>
     </>
   );
 };
 
-export default BacktestSidebar;
+export default WalkForwardSidebar;
