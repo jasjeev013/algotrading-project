@@ -27,14 +27,6 @@ const WalkForwardSidebar = ({
   setStepMonths,
   warmupBars,
   setWarmupBars,
-  commissionPct,
-  setCommissionPct,
-  spreadPct,
-  setSpreadPct,
-  slippagePct,
-  setSlippagePct,
-  financingPct,
-  setFinancingPct,
   loading,
   onRun,
 }) => {
@@ -190,56 +182,6 @@ const WalkForwardSidebar = ({
           />
         </div>
       </div>
-
-      <details className="advanced-settings">
-        <summary className="sidebar-section-title">Advanced Settings</summary>
-
-        <div className="input-row">
-          <div className="input-group" style={{ animationDelay: "0.11s" }}>
-            <label>Commission (%)</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={commissionPct}
-              onChange={(e) => setCommissionPct(e.target.value)}
-            />
-          </div>
-          <div className="input-group" style={{ animationDelay: "0.12s" }}>
-            <label>Spread (%)</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={spreadPct}
-              onChange={(e) => setSpreadPct(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="input-row">
-          <div className="input-group" style={{ animationDelay: "0.13s" }}>
-            <label>Slippage (%)</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={slippagePct}
-              onChange={(e) => setSlippagePct(e.target.value)}
-            />
-          </div>
-          <div className="input-group" style={{ animationDelay: "0.14s" }}>
-            <label>Overnight Financing (%/day)</label>
-            <input
-              type="number"
-              step="0.001"
-              min="0"
-              value={financingPct}
-              onChange={(e) => setFinancingPct(e.target.value)}
-            />
-          </div>
-        </div>
-      </details>
 
       <button className="run-btn" onClick={onRun} disabled={loading}>
         {loading ? "Running Walk-Forward…" : "Run Walk-Forward"}

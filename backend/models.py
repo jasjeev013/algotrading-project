@@ -28,6 +28,7 @@ class BacktestRun(Base):
     spread_pct = Column(Float, nullable=False, default=0.0002)
     slippage_pct = Column(Float, nullable=False, default=0.0001)
     overnight_financing_pct = Column(Float, nullable=False, default=0.0)
+    engine = Column(String, nullable=False, default="iterative")
     strategy_params = Column(JSON, nullable=False, default=dict)
     metrics = Column(JSON, nullable=False, default=dict)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

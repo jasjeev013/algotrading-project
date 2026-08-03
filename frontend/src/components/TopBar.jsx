@@ -39,7 +39,11 @@ const TopBar = ({ mode }) => {
               ? "Live Execution Console"
               : mode === "walkforward"
                 ? "Walk-Forward Validation Engine"
-                : "Backtesting Engine"}
+                : mode === "settings"
+                  ? "Advanced Settings"
+                  : mode === "history"
+                    ? "Activity History"
+                    : "Strategy Explorer"}
           </span>
         </div>
       </div>

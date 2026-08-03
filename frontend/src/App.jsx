@@ -2,12 +2,14 @@ import { useState } from "react";
 import axios from "axios";
 import TopBar from "./components/TopBar";
 import RegimeHeader from "./components/RegimeHeader";
+import NavRail from "./components/NavRail";
 import BacktestSidebar from "./components/BacktestSidebar";
 import WalkForwardSidebar from "./components/WalkForwardSidebar";
 import LiveSidebar from "./components/LiveSidebar";
+import AdvancedSettingsSidebar from "./components/AdvancedSettingsSidebar";
+import AdvancedSettingsPanel from "./components/AdvancedSettingsPanel";
 import HistorySidebar from "./components/HistorySidebar";
 import HistoryPanel from "./components/HistoryPanel";
-import WalkForwardHistoryPanel from "./components/WalkForwardHistoryPanel";
 import TradingChart from "./components/TradingChart";
 import EquityCurveChart from "./components/EquityCurveChart";
 import FeatureImportancePanel from "./components/FeatureImportancePanel";
@@ -32,7 +34,7 @@ const NON_FITTING_STRATEGIES = ["SMA", "Bollinger"];
 
 function App() {
   // --- MODE ---
-  const [mode, setMode] = useState("backtest"); // 'backtest' | 'walkforward' | 'live' | 'history'
+  const [mode, setMode] = useState("backtest"); // 'backtest' | 'walkforward' | 'live' | 'settings' | 'history'
 
   // --- SHARED STATE (instrument/strategy selection used by both Backtest and
   // Walk-Forward tabs) ---
@@ -44,8 +46,10 @@ function App() {
   const [dataInterval, setDataInterval] = useState("1d");
   const [strategyParams, setStrategyParams] = useState(DEFAULT_PARAMS);
   const [pairTicker, setPairTicker] = useState("MSFT");
+  const [engine, setEngine] = useState("iterative");
 
-  // --- COSTS (displayed as %, converted to decimals when sent to the API) ---
+  // --- COSTS (Advanced Settings — global defaults, displayed as %,
+  // converted to decimals when sent to the API; no per-run overrides) ---
   const [commissionPct, setCommissionPct] = useState(0.1);
   const [spreadPct, setSpreadPct] = useState(0.02);
   const [slippagePct, setSlippagePct] = useState(0.01);
@@ -55,13 +59,14 @@ function App() {
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
 
-  // --- BACKTEST HISTORY ---
+  // --- UNIFIED HISTORY (backtests + walk-forward runs, merged server-side
+  // by GET /api/history) ---
   const [historyRuns, setHistoryRuns] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(null);
 
-  // --- WALK-FORWARD (separate mode: its own settings, results, and DB-backed
-  // history, decoupled from the plain Backtest flow above) ---
+  // --- WALK-FORWARD (separate mode: its own settings and results, decoupled
+  // from the plain Backtest flow above) ---
   const [wfTrainMonths, setWfTrainMonths] = useState(12);
   const [wfTradeMonths, setWfTradeMonths] = useState(3);
   const [wfStepMonths, setWfStepMonths] = useState("");
@@ -70,10 +75,6 @@ function App() {
   const [wfLoading, setWfLoading] = useState(false);
   const [wfError, setWfError] = useState(null);
   const [wfResults, setWfResults] = useState(null);
-
-  const [wfHistoryRuns, setWfHistoryRuns] = useState([]);
-  const [wfHistoryLoading, setWfHistoryLoading] = useState(false);
-  const [wfHistoryError, setWfHistoryError] = useState(null);
 
   const buildParamsForStrategy = () => {
     if (strategy === "SMA") {
@@ -154,6 +155,7 @@ function App() {
       spread_pct: parseFloat(spreadPct) / 100,
       slippage_pct: parseFloat(slippagePct) / 100,
       overnight_financing_pct: parseFloat(financingPct) / 100,
+      engine: engine,
     };
 
     try {
@@ -172,11 +174,11 @@ function App() {
     setHistoryLoading(true);
     setHistoryError(null);
     try {
-      const response = await axios.get(`${API_BASE}/api/backtests`);
+      const response = await axios.get(`${API_BASE}/api/history`);
       setHistoryRuns(response.data.runs || []);
     } catch (err) {
       setHistoryError(
-        err.response?.data?.detail || "Error fetching backtest history.",
+        err.response?.data?.detail || "Error fetching history.",
       );
     } finally {
       setHistoryLoading(false);
@@ -205,6 +207,7 @@ function App() {
       setSpreadPct(run.spread_pct * 100);
       setSlippagePct(run.slippage_pct * 100);
       setFinancingPct(run.overnight_financing_pct * 100);
+      setEngine(run.engine || "iterative");
 
       setResults(run);
     } catch (err) {
@@ -214,6 +217,15 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSelectHistoryRun = (run) => {
+    if (run.run_type === "walkforward") {
+      loadWfHistoricalRun(run.run_id);
+    } else if (run.run_type === "backtest") {
+      loadHistoricalRun(run.run_id);
+    }
+    // run_type === "live" is reserved for when Live Paper Trading ships.
   };
 
   const runWalkForward = async () => {
@@ -256,21 +268,6 @@ function App() {
     }
   };
 
-  const fetchWfHistory = async () => {
-    setWfHistoryLoading(true);
-    setWfHistoryError(null);
-    try {
-      const response = await axios.get(`${API_BASE}/api/walk-forward-runs`);
-      setWfHistoryRuns(response.data.runs || []);
-    } catch (err) {
-      setWfHistoryError(
-        err.response?.data?.detail || "Error fetching walk-forward history.",
-      );
-    } finally {
-      setWfHistoryLoading(false);
-    }
-  };
-
   const loadWfHistoricalRun = async (runId) => {
     setWfLoading(true);
     setWfError(null);
@@ -310,9 +307,6 @@ function App() {
     setMode(nextMode);
     if (nextMode === "history") {
       fetchHistory();
-    }
-    if (nextMode === "walkforward") {
-      fetchWfHistory();
     }
   };
 
@@ -392,35 +386,10 @@ function App() {
       <RegimeHeader />
 
       <div className="dashboard-container">
+        <NavRail mode={mode} onSelect={handleModeChange} />
+
         {/* SIDEBAR */}
         <div className="sidebar">
-          <div className="mode-tabs">
-            <button
-              className={`mode-tab backtest ${mode === "backtest" ? "active" : ""}`}
-              onClick={() => handleModeChange("backtest")}
-            >
-              <span className="dot" /> Backtest
-            </button>
-            <button
-              className={`mode-tab walkforward ${mode === "walkforward" ? "active" : ""}`}
-              onClick={() => handleModeChange("walkforward")}
-            >
-              <span className="dot" /> Walk-Fwd
-            </button>
-            <button
-              className={`mode-tab live ${mode === "live" ? "active" : ""}`}
-              onClick={() => handleModeChange("live")}
-            >
-              <span className="dot" /> Live
-            </button>
-            <button
-              className={`mode-tab history ${mode === "history" ? "active" : ""}`}
-              onClick={() => handleModeChange("history")}
-            >
-              <span className="dot" /> History
-            </button>
-          </div>
-
           {mode === "backtest" ? (
             <BacktestSidebar
               ticker={ticker}
@@ -439,14 +408,8 @@ function App() {
               setStrategyParams={setStrategyParams}
               pairTicker={pairTicker}
               setPairTicker={setPairTicker}
-              commissionPct={commissionPct}
-              setCommissionPct={setCommissionPct}
-              spreadPct={spreadPct}
-              setSpreadPct={setSpreadPct}
-              slippagePct={slippagePct}
-              setSlippagePct={setSlippagePct}
-              financingPct={financingPct}
-              setFinancingPct={setFinancingPct}
+              engine={engine}
+              setEngine={setEngine}
               loading={loading}
               onRun={runBacktest}
             />
@@ -476,19 +439,13 @@ function App() {
               setStepMonths={setWfStepMonths}
               warmupBars={wfWarmupBars}
               setWarmupBars={setWfWarmupBars}
-              commissionPct={commissionPct}
-              setCommissionPct={setCommissionPct}
-              spreadPct={spreadPct}
-              setSpreadPct={setSpreadPct}
-              slippagePct={slippagePct}
-              setSlippagePct={setSlippagePct}
-              financingPct={financingPct}
-              setFinancingPct={setFinancingPct}
               loading={wfLoading}
               onRun={runWalkForward}
             />
           ) : mode === "live" ? (
             <LiveSidebar />
+          ) : mode === "settings" ? (
+            <AdvancedSettingsSidebar />
           ) : (
             <HistorySidebar onRefresh={fetchHistory} loading={historyLoading} />
           )}
@@ -700,38 +657,49 @@ function App() {
                   Walk-Forward" to begin.
                 </div>
               )}
-
-              <WalkForwardHistoryPanel
-                runs={wfHistoryRuns}
-                loading={wfHistoryLoading}
-                error={wfHistoryError}
-                onSelectRun={loadWfHistoricalRun}
-              />
             </>
           ) : mode === "live" ? (
             <>
-              <h1>Live Trading</h1>
+              <h1>Live Paper Trading</h1>
               <p className="subtitle">
                 Event-driven execution against OANDA paper trading.
               </p>
               <div className="empty-state">
                 <div className="empty-icon">⚡</div>
                 Live execution ships in Phase 5–7 of the V2 roadmap. Switch back
-                to Backtest to run a historical simulation.
+                to Strategy Explorer to run a historical simulation.
               </div>
+            </>
+          ) : mode === "settings" ? (
+            <>
+              <h1>Advanced Settings</h1>
+              <p className="subtitle">
+                Global cost defaults applied to every Strategy Explorer and
+                Walk Forward Engine run.
+              </p>
+              <AdvancedSettingsPanel
+                commissionPct={commissionPct}
+                setCommissionPct={setCommissionPct}
+                spreadPct={spreadPct}
+                setSpreadPct={setSpreadPct}
+                slippagePct={slippagePct}
+                setSlippagePct={setSlippagePct}
+                financingPct={financingPct}
+                setFinancingPct={setFinancingPct}
+              />
             </>
           ) : (
             <>
-              <h1>Backtest History</h1>
+              <h1>History</h1>
               <p className="subtitle">
-                Past runs saved to the database. Click a row to reload its
-                results.
+                Every backtest and walk-forward run saved to the database.
+                Click a row to reload its results.
               </p>
               <HistoryPanel
                 runs={historyRuns}
                 loading={historyLoading}
                 error={historyError}
-                onSelectRun={loadHistoricalRun}
+                onSelectRun={handleSelectHistoryRun}
               />
             </>
           )}

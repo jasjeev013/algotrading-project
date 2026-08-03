@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./quantdash.db"
@@ -23,3 +23,25 @@ def init_db():
     import models  # noqa: F401  (ensure models are registered before create_all)
 
     Base.metadata.create_all(bind=engine)
+    _run_lightweight_migrations()
+
+
+def _run_lightweight_migrations():
+    """
+    Base.metadata.create_all() never alters existing tables. There's no
+    Alembic in this project, so new nullable/defaulted columns on
+    already-created tables are added here via a guarded ALTER TABLE,
+    safe to run on every startup.
+    """
+    with engine.connect() as conn:
+        cols = {
+            row[1]
+            for row in conn.execute(text("PRAGMA table_info(backtest_runs)"))
+        }
+        if "engine" not in cols:
+            conn.execute(
+                text(
+                    "ALTER TABLE backtest_runs ADD COLUMN engine VARCHAR DEFAULT 'iterative'"
+                )
+            )
+            conn.commit()

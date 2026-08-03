@@ -1,16 +1,6 @@
 import pandas as pd
 
-
-def _apply_fill_costs(
-    price: float, side: str, spread_pct: float, slippage_pct: float
-) -> float:
-    """
-    Adjusts a raw close price for bid/ask spread and slippage.
-    side: "buy" fills above the raw price, "sell" fills below it.
-    """
-    if side == "buy":
-        return price * (1 + spread_pct / 2 + slippage_pct)
-    return price * (1 - spread_pct / 2 - slippage_pct)
+from cost_model import apply_fill_costs as _apply_fill_costs
 
 
 def run_iterative_backtest(

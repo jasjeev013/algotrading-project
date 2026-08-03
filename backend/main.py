@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from data_fetcher import fetch_historical_data
 from strategies import SMACrossover, BollingerBands, MLRandomForest, StatArbitrageStrategy
 from backtester import run_iterative_backtest
+from vectorized_backtester import run_vectorized_backtest
 from walk_forward_engine import run_walk_forward_backtest
 from analytics import calculate_metrics
 from market_regime import get_current_regime
@@ -19,6 +20,11 @@ STRATEGY_REGISTRY = {
     "Bollinger": BollingerBands,
     "ML": MLRandomForest,
     "StatArb": StatArbitrageStrategy,
+}
+
+ENGINE_REGISTRY = {
+    "iterative": run_iterative_backtest,
+    "vectorized": run_vectorized_backtest,
 }
 
 app = FastAPI(title="QuantDash API")
@@ -120,11 +126,16 @@ class BacktestRequest(BaseModel):
     spread_pct: float = 0.0002
     slippage_pct: float = 0.0001
     overnight_financing_pct: float = 0.0
+    engine: str = "iterative"
 
 
 @app.post("/api/backtest")
 def run_backtest(request: BacktestRequest, db: Session = Depends(get_db)):
     try:
+        run_engine = ENGINE_REGISTRY.get(request.engine)
+        if run_engine is None:
+            raise HTTPException(status_code=400, detail="Unknown backtest engine selected.")
+
         # 1. Fetch Data
         raw_data = fetch_historical_data(
             ticker=request.ticker.upper(),
@@ -161,7 +172,7 @@ def run_backtest(request: BacktestRequest, db: Session = Depends(get_db)):
         signal_df = strategy_instance.generate_signals()
 
         # 4. Run the Backtest Engine
-        equity_curve, trade_log = run_iterative_backtest(
+        equity_curve, trade_log = run_engine(
             df=signal_df,
             initial_capital=request.initial_capital,
             commission_pct=request.commission_pct,
@@ -209,6 +220,7 @@ def run_backtest(request: BacktestRequest, db: Session = Depends(get_db)):
             spread_pct=request.spread_pct,
             slippage_pct=request.slippage_pct,
             overnight_financing_pct=request.overnight_financing_pct,
+            engine=request.engine,
             strategy_params=persisted_strategy_params,
             metrics=metrics,
         )
@@ -235,6 +247,7 @@ def run_backtest(request: BacktestRequest, db: Session = Depends(get_db)):
         return {
             "status": "success",
             "run_id": run.id,
+            "engine": request.engine,
             "metrics": metrics,
             "equity_curve": equity_curve,
             "trade_log": trade_log[::-1],  # Reverse list so newest trades are at top
@@ -264,6 +277,7 @@ def list_backtests(db: Session = Depends(get_db)):
                 "interval": run.interval,
                 "start_date": run.start_date,
                 "end_date": run.end_date,
+                "engine": run.engine,
                 "created_at": run.created_at.isoformat() if run.created_at else None,
                 "metrics": run.metrics,
             }
@@ -311,6 +325,7 @@ def get_backtest(run_id: int, db: Session = Depends(get_db)):
         "spread_pct": run.spread_pct,
         "slippage_pct": run.slippage_pct,
         "overnight_financing_pct": run.overnight_financing_pct,
+        "engine": run.engine,
         "metrics": run.metrics,
         "trade_log": trade_log[::-1],
     }
@@ -527,3 +542,60 @@ def get_walk_forward_run(run_id: int, db: Session = Depends(get_db)):
             "window_metrics": run.window_metrics,
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Unified History: a read-time merge over BacktestRun + WalkForwardRun, not a
+# physical table -- avoids dual-writing on every POST /api/backtest and
+# POST /api/walk-forward for what's fundamentally a presentational concern.
+# run_type "live" is reserved (unpopulated) so a future live-trades table
+# can be unioned in here later without changing this endpoint's contract.
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/history")
+def list_history(db: Session = Depends(get_db)):
+    """
+    Unified, chronological list of everything run so far -- backtests and
+    walk-forward runs today, live paper trades reserved for later.
+    """
+    backtest_runs = db.query(BacktestRun).order_by(BacktestRun.created_at.desc()).all()
+    walk_forward_runs = (
+        db.query(WalkForwardRun).order_by(WalkForwardRun.created_at.desc()).all()
+    )
+
+    normalized = [
+        {
+            "run_id": run.id,
+            "run_type": "backtest",
+            "ticker": run.ticker,
+            "strategy": run.strategy,
+            "interval": run.interval,
+            "start_date": run.start_date,
+            "end_date": run.end_date,
+            "engine": run.engine,
+            "created_at": run.created_at.isoformat() if run.created_at else None,
+            "metrics": run.metrics,
+        }
+        for run in backtest_runs
+    ] + [
+        {
+            "run_id": run.id,
+            "run_type": "walkforward",
+            "ticker": run.ticker,
+            "strategy": run.strategy,
+            "interval": run.interval,
+            "start_date": run.start_date,
+            "end_date": run.end_date,
+            "train_months": run.train_months,
+            "trade_months": run.trade_months,
+            "step_months": run.step_months,
+            "created_at": run.created_at.isoformat() if run.created_at else None,
+            "metrics": run.metrics,
+        }
+        for run in walk_forward_runs
+    ]
+
+    normalized.sort(key=lambda row: row["created_at"] or "", reverse=True)
+
+    return {"status": "success", "runs": normalized}
