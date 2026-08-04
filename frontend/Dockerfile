@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install frontend dependencies
-RUN npm install
+RUN npm install && chmod -R +x node_modules/.bin
 
 # Copy the rest of the frontend code
 COPY . .

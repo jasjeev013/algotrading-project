@@ -82,16 +82,40 @@ These are known V1 bugs that must be fixed before building on top of them.
 
 ---
 
-### Phase 4: Walk-Forward Testing & Strategy Upgrades
+### Phase 4: Walk-Forward Testing & Multi-Mode Dashboard Architecture
 
-- [ ] **4.1 Walk-Forward Engine** — Create `walk_forward_engine.py`. It takes a full date range and splits it into rolling windows:
+Dashboard restructured into 5 tabs: **Strategy Explorer**, **Walk-Forward Engine**, **Live Paper Trading** (coming soon), **Advance Settings**, and **History**. All modes share a unified backend API and centralized trade logging.
+
+#### Tab 1: Strategy Explorer (Backtesting)
+- [ ] **4.1.1 Vectorized backtest mode** — Implement fast `backtest_vectorized()` in `backtester.py` for quick iterations. Uses pandas `.shift()` and boolean masks instead of row-by-row loops. Use for rapid strategy prototyping.
+- [ ] **4.1.2 Iterative backtest mode** — Keep existing row-by-row `backtest_iterative()` for realistic simulation with order fills, slippage, and commission per-trade. Toggle between both modes in the UI dropdown.
+- [ ] **4.1.3 Live-update results** — On each strategy parameter change in the Strategy Explorer tab, auto-run the selected backtest mode and display: metrics cards, candlestick chart with trade markers, equity curve, and trade log.
+
+#### Tab 2: Walk-Forward Engine
+- [ ] **4.2.1 WFO core engine** — Create `walk_forward_engine.py`. It takes a full date range and splits it into rolling windows:
   - Train on months 1–12 → Trade on months 13–15
   - Train on months 4–15 → Trade on months 16–18
   - Stitch the "traded" segments into one realistic equity curve.
   - Return per-window metrics alongside the combined curve so degradation over time is visible.
-- [ ] **4.2 Fix MLRandomForest with WFO** — Replace the V1 full-dataset training with the walk-forward engine. Each window trains a fresh model only on in-sample data, then predicts out-of-sample. This eliminates data leakage entirely.
-- [ ] **4.3 Pairs Trading Strategy** — Create `StatArbitrageStrategy` in `strategies.py`. Use `statsmodels` to test for cointegration between two tickers (e.g., AAPL/MSFT). Trade the spread: go long the cheap leg, short the expensive leg when the spread diverges by >2 standard deviations.
-- [ ] **4.4 Improved ML features** — Upgrade `MLRandomForest` with additional features: RSI (14), MACD signal line, ATR (14 days), day-of-week, volume ratio (today/5-day average). Add feature importance output to the API response.
+- [ ] **4.2.2 Fix MLRandomForest with WFO** — Replace the V1 full-dataset training with the walk-forward engine. Each window trains a fresh model only on in-sample data, then predicts out-of-sample. This eliminates data leakage entirely.
+- [ ] **4.2.3 WFO frontend UI** — Add inputs for window size (months) and step size (months). Display per-window metrics in a table and overlay all window equity curves on a single chart to visualize strategy degradation.
+
+#### Tab 3: Live Paper Trading (Coming Soon)
+- [ ] **4.3.1 Placeholder UI** — Add a disabled tab with message: "Live paper trading integration coming in Phase 5 (OANDA API). Will show live account balance, active positions, and live signals from the selected strategy."
+
+#### Tab 4: Advance Settings
+- [ ] **4.4.1 Unified parameter panel** — Create a settings sidebar section that dynamically renders inputs based on the selected strategy (SMACrossover → short_window, long_window sliders; BollingerBands → window, num_std; MLRandomForest → train/test split ratio, feature set selection).
+- [ ] **4.4.2 Market microstructure params** — Inputs for `spread_pct`, `slippage_pct`, `overnight_fee_pct`. These apply to all backtests in both Explorer and WFO tabs.
+- [ ] **4.4.3 Save/load profiles** — Allow users to save custom parameter sets as "profiles" (e.g., "Conservative", "Aggressive", "Pairs Trading"). Profiles are persisted to the DB.
+
+#### Tab 5: History
+- [ ] **4.5.1 Backtest run history** — Fetch past backtest runs from `GET /api/backtests`. Display a table with: run name (user-assigned or auto-generated timestamp), strategy, date range, key metrics (Total Return, Sharpe, Max DD). Clicking a row loads that run's full results.
+- [ ] **4.5.2 Comparison view** — Select multiple historical runs and overlay their equity curves on one chart to compare strategies or parameter tuning sessions side-by-side.
+- [ ] **4.5.3 Export/archive** — Add buttons to export a run as JSON or CSV, or delete old runs to reclaim DB space.
+
+#### Strategy Additions
+- [ ] **4.6.1 Stat Arbitrage (Pairs Trading)** — Create `StatArbitrageStrategy` in `strategies.py`. Use `statsmodels.tsa.stattools.coint()` to test for cointegration between two tickers (e.g., AAPL/MSFT or any user-selected pair). Trade the spread: go long the cheap leg, short the expensive leg when the spread diverges by >2 standard deviations. Include z-score thresholds and mean-reversion entry/exit logic as configurable params.
+- [ ] **4.6.2 Improved ML features** — Upgrade `MLRandomForest` with additional features: RSI (14), MACD signal line, ATR (14 days), day-of-week, volume ratio (today/5-day average). Add feature importance output to the API response and display as a horizontal bar chart in the Strategy Explorer tab.
 
 ---
 

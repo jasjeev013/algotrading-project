@@ -6,6 +6,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: quantdash-backend
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     volumes:

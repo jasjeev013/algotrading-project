@@ -11,6 +11,7 @@ from analytics import calculate_metrics
 from market_regime import get_current_regime
 from database import get_db, init_db
 from models import BacktestRun, TradeRecord, WalkForwardRun
+from execution_handler import OandaExecutionHandler
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from data_fetcher import fetch_historical_data
@@ -551,6 +552,41 @@ def get_walk_forward_run(run_id: int, db: Session = Depends(get_db)):
 # run_type "live" is reserved (unpopulated) so a future live-trades table
 # can be unioned in here later without changing this endpoint's contract.
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Live Paper Trading (Phase 5): OANDA account validation + kill switch.
+# The full live bot loop is Phase 6 -- these two endpoints only validate
+# connectivity and provide an emergency flatten-all-positions control that
+# works independently of any bot loop (there is none yet).
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/live/account")
+def get_live_account():
+    """
+    Validate OANDA credentials/connectivity and return the practice account summary.
+    """
+    try:
+        handler = OandaExecutionHandler()
+        return {"status": "success", "account": handler.get_account_summary()}
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/live/kill_switch")
+def kill_switch():
+    """
+    Emergency stop: closes every open position on the OANDA account.
+    """
+    try:
+        handler = OandaExecutionHandler()
+        results = handler.close_all_positions()
+        return {"status": "success", "results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/history")
