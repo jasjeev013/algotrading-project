@@ -584,6 +584,37 @@ button.run-btn:disabled {
   line-height: 1.6;
 }
 
+button.live-run-btn {
+  background: var(--live);
+  color: #071726;
+}
+
+button.live-run-btn:hover:not(:disabled) {
+  background: #3480c2;
+}
+
+button.live-stop-btn {
+  background: var(--bg-2);
+  color: var(--text-primary);
+  border: 1px solid var(--border-hover);
+}
+
+button.live-stop-btn:hover:not(:disabled) {
+  background: var(--bg-3);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.live-error {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid rgba(217, 83, 79, 0.25);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  margin: 10px 0 0;
+  font-size: 12px;
+}
+
 button.kill-btn {
   width: 100%;
   padding: 10px;
@@ -594,6 +625,51 @@ button.kill-btn {
   font-size: 13px;
   font-weight: 600;
   cursor: not-allowed;
+}
+
+button.kill-btn.active {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid rgba(217, 83, 79, 0.4);
+  cursor: pointer;
+  transition:
+    background 0.15s var(--ease),
+    border-color 0.15s var(--ease);
+}
+
+button.kill-btn.active:hover:not(:disabled) {
+  background: rgba(217, 83, 79, 0.16);
+  border-color: var(--danger);
+}
+
+button.kill-btn.active:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.live-status-strip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 10px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.live-status-strip .status-pill.live-state {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.live-status-strip .live-heartbeat {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.live-status-strip .live-heartbeat.error {
+  color: var(--danger);
 }
 
 /* =========================================================

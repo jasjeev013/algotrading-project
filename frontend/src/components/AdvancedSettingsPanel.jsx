@@ -7,8 +7,21 @@ const AdvancedSettingsPanel = ({
   setSlippagePct,
   financingPct,
   setFinancingPct,
+  livePollMinutes,
+  setLivePollMinutes,
+  liveGranularity,
+  setLiveGranularity,
+  liveCandleCount,
+  setLiveCandleCount,
+  liveTradeUnits,
+  setLiveTradeUnits,
+  liveMinBalance,
+  setLiveMinBalance,
+  liveMaxPositions,
+  setLiveMaxPositions,
 }) => {
   return (
+    <>
     <div className="section-block">
       <h2>Cost Model</h2>
       <p className="section-desc">
@@ -67,6 +80,93 @@ const AdvancedSettingsPanel = ({
         </div>
       </div>
     </div>
+
+    <div className="section-block">
+      <h2>Live Bot Defaults</h2>
+      <p className="section-desc">
+        Controls the OANDA paper-trading bot's tick loop, candle feed, and
+        risk guards — applied the next time you click "Start Bot" on the Live
+        Paper Trading tab.
+      </p>
+
+      <div className="input-row">
+        <div className="input-group">
+          <label>Poll Interval (minutes)</label>
+          <input
+            type="number"
+            step="1"
+            min="1"
+            value={livePollMinutes}
+            onChange={(e) => setLivePollMinutes(e.target.value)}
+          />
+          <p className="field-hint">How often the bot fetches candles and re-evaluates its signal.</p>
+        </div>
+        <div className="input-group">
+          <label>Candle Granularity</label>
+          <select value={liveGranularity} onChange={(e) => setLiveGranularity(e.target.value)}>
+            <option value="M1">1 Minute</option>
+            <option value="M5">5 Minutes</option>
+            <option value="M15">15 Minutes</option>
+            <option value="M30">30 Minutes</option>
+            <option value="H1">1 Hour</option>
+            <option value="H4">4 Hours</option>
+          </select>
+          <p className="field-hint">Candle timeframe the strategy evaluates and the chart displays.</p>
+        </div>
+      </div>
+
+      <div className="input-row">
+        <div className="input-group">
+          <label>Candle Lookback (bars)</label>
+          <input
+            type="number"
+            step="1"
+            min="10"
+            max="500"
+            value={liveCandleCount}
+            onChange={(e) => setLiveCandleCount(e.target.value)}
+          />
+          <p className="field-hint">Number of recent candles fetched per tick and shown on the chart.</p>
+        </div>
+        <div className="input-group">
+          <label>Trade Size (units)</label>
+          <input
+            type="number"
+            step="1"
+            min="1"
+            value={liveTradeUnits}
+            onChange={(e) => setLiveTradeUnits(e.target.value)}
+          />
+          <p className="field-hint">Order size placed whenever the bot opens or reverses a position.</p>
+        </div>
+      </div>
+
+      <div className="input-row">
+        <div className="input-group">
+          <label>Min Account Balance</label>
+          <input
+            type="number"
+            step="1"
+            min="0"
+            value={liveMinBalance}
+            onChange={(e) => setLiveMinBalance(e.target.value)}
+          />
+          <p className="field-hint">Risk guard — the bot won't open new positions below this balance.</p>
+        </div>
+        <div className="input-group">
+          <label>Max Open Positions</label>
+          <input
+            type="number"
+            step="1"
+            min="1"
+            value={liveMaxPositions}
+            onChange={(e) => setLiveMaxPositions(e.target.value)}
+          />
+          <p className="field-hint">Risk guard — caps how many concurrent open positions the bot allows.</p>
+        </div>
+      </div>
+    </div>
+    </>
   );
 };
 

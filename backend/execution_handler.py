@@ -3,9 +3,7 @@ from oandapyV20 import API
 from oandapyV20.endpoints import instruments, accounts, orders, positions
 from oandapyV20.exceptions import V20Error
 
-from config import OANDA_ACCOUNT_ID, OANDA_API_KEY, OANDA_ENVIRONMENT
-
-MAX_ORDER_UNITS = 1000
+from config import OANDA_ACCOUNT_ID, OANDA_API_KEY, OANDA_ENVIRONMENT, MAX_ORDER_UNITS
 
 
 class OandaExecutionHandler:
@@ -64,8 +62,37 @@ class OandaExecutionHandler:
             raise RuntimeError(f"Failed to place order for {instrument}: {e}") from e
         return response
 
+    def get_position_for_instrument(self, instrument: str):
+        for pos in self.get_open_positions():
+            if pos.get("instrument") == instrument:
+                return pos
+        return None
+
     def close_position(self, instrument: str):
-        data = {"longUnits": "ALL", "shortUnits": "ALL"}
+        """
+        Closes only the sides of the position that actually have open units.
+        OANDA rejects the *entire* PositionClose request -- including a real
+        long leg -- if it's also asked to close a short leg that doesn't
+        exist (CLOSEOUT_POSITION_DOESNT_EXIST), so sending
+        {longUnits: ALL, shortUnits: ALL} unconditionally can fail to close a
+        position that's genuinely open on one side only.
+        """
+        position = self.get_position_for_instrument(instrument)
+        if position is None:
+            return {"status": "already_flat", "instrument": instrument}
+
+        long_units = float(position.get("long", {}).get("units", 0) or 0)
+        short_units = float(position.get("short", {}).get("units", 0) or 0)
+
+        data = {}
+        if long_units != 0:
+            data["longUnits"] = "ALL"
+        if short_units != 0:
+            data["shortUnits"] = "ALL"
+
+        if not data:
+            return {"status": "already_flat", "instrument": instrument}
+
         req = positions.PositionClose(accountID=self.account_id, instrument=instrument, data=data)
         try:
             response = self.client.request(req)

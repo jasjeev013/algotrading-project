@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import TopBar from "./components/TopBar";
 import RegimeHeader from "./components/RegimeHeader";
@@ -6,6 +6,7 @@ import NavRail from "./components/NavRail";
 import BacktestSidebar from "./components/BacktestSidebar";
 import WalkForwardSidebar from "./components/WalkForwardSidebar";
 import LiveSidebar from "./components/LiveSidebar";
+import LivePanel from "./components/LivePanel";
 import AdvancedSettingsSidebar from "./components/AdvancedSettingsSidebar";
 import AdvancedSettingsPanel from "./components/AdvancedSettingsPanel";
 import HistorySidebar from "./components/HistorySidebar";
@@ -75,6 +76,99 @@ function App() {
   const [wfLoading, setWfLoading] = useState(false);
   const [wfError, setWfError] = useState(null);
   const [wfResults, setWfResults] = useState(null);
+
+  // --- LIVE PAPER TRADING ---
+  const [liveStrategy, setLiveStrategy] = useState("SMA");
+  const [liveInstrument, setLiveInstrument] = useState("EUR_USD");
+
+  // Configurable in Advanced Settings — global defaults for the live bot,
+  // mirroring how the cost model works for Backtest/Walk-Forward: one place
+  // to set them, no per-run overrides.
+  const [livePollMinutes, setLivePollMinutes] = useState(15);
+  const [liveGranularity, setLiveGranularity] = useState("M15");
+  const [liveCandleCount, setLiveCandleCount] = useState(100);
+  const [liveTradeUnits, setLiveTradeUnits] = useState(100);
+  const [liveMinBalance, setLiveMinBalance] = useState(100);
+  const [liveMaxPositions, setLiveMaxPositions] = useState(3);
+
+  const [liveAccount, setLiveAccount] = useState(null);
+  const [liveStatus, setLiveStatus] = useState(null);
+  const [liveCandles, setLiveCandles] = useState([]);
+  const [liveTrades, setLiveTrades] = useState([]);
+
+  // Account + bot status: light polling, only while the Live tab is open.
+  useEffect(() => {
+    if (mode !== "live") return undefined;
+    let cancelled = false;
+
+    const fetchAccount = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/api/live/account`, { timeout: 8000 });
+        if (!cancelled) setLiveAccount(res.data.account);
+      } catch (err) {
+        if (!cancelled) setLiveAccount(null);
+      }
+    };
+    const fetchStatus = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/api/live/status`, { timeout: 8000 });
+        if (!cancelled) setLiveStatus(res.data);
+      } catch (err) {
+        if (!cancelled) setLiveStatus(null);
+      }
+    };
+
+    fetchAccount();
+    fetchStatus();
+    const accountPoll = setInterval(fetchAccount, 60000);
+    const statusPoll = setInterval(fetchStatus, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(accountPoll);
+      clearInterval(statusPoll);
+    };
+  }, [mode]);
+
+  // Chart candles + trade log: poll while the Live tab is open, tracking
+  // whichever instrument/granularity the bot is (or would be) running with.
+  useEffect(() => {
+    if (mode !== "live") return undefined;
+    let cancelled = false;
+
+    const fetchCandles = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/api/live/candles`, {
+          params: {
+            instrument: liveInstrument,
+            granularity: liveGranularity,
+            count: liveCandleCount,
+          },
+          timeout: 8000,
+        });
+        if (!cancelled) setLiveCandles(res.data.candles || []);
+      } catch (err) {
+        if (!cancelled) setLiveCandles([]);
+      }
+    };
+    const fetchTrades = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/api/live/trades`, { timeout: 8000 });
+        if (!cancelled) setLiveTrades(res.data.trades || []);
+      } catch (err) {
+        if (!cancelled) setLiveTrades([]);
+      }
+    };
+
+    fetchCandles();
+    fetchTrades();
+    const candlePoll = setInterval(fetchCandles, 15000);
+    const tradePoll = setInterval(fetchTrades, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(candlePoll);
+      clearInterval(tradePoll);
+    };
+  }, [mode, liveInstrument, liveGranularity, liveCandleCount]);
 
   const buildParamsForStrategy = () => {
     if (strategy === "SMA") {
@@ -443,7 +537,23 @@ function App() {
               onRun={runWalkForward}
             />
           ) : mode === "live" ? (
-            <LiveSidebar />
+            <LiveSidebar
+              strategy={liveStrategy}
+              setStrategy={setLiveStrategy}
+              instrument={liveInstrument}
+              setInstrument={setLiveInstrument}
+              account={liveAccount}
+              status={liveStatus}
+              onStatusChange={setLiveStatus}
+              startPayload={{
+                interval_minutes: parseInt(livePollMinutes, 10),
+                granularity: liveGranularity,
+                candle_count: parseInt(liveCandleCount, 10),
+                trade_units: parseInt(liveTradeUnits, 10),
+                min_account_balance: parseFloat(liveMinBalance),
+                max_open_positions: parseInt(liveMaxPositions, 10),
+              }}
+            />
           ) : mode === "settings" ? (
             <AdvancedSettingsSidebar />
           ) : (
@@ -664,11 +774,12 @@ function App() {
               <p className="subtitle">
                 Event-driven execution against OANDA paper trading.
               </p>
-              <div className="empty-state">
-                <div className="empty-icon">⚡</div>
-                Live execution ships in Phase 5–7 of the V2 roadmap. Switch back
-                to Strategy Explorer to run a historical simulation.
-              </div>
+              <LivePanel
+                instrument={liveInstrument}
+                candles={liveCandles}
+                trades={liveTrades}
+                status={liveStatus}
+              />
             </>
           ) : mode === "settings" ? (
             <>
@@ -686,6 +797,18 @@ function App() {
                 setSlippagePct={setSlippagePct}
                 financingPct={financingPct}
                 setFinancingPct={setFinancingPct}
+                livePollMinutes={livePollMinutes}
+                setLivePollMinutes={setLivePollMinutes}
+                liveGranularity={liveGranularity}
+                setLiveGranularity={setLiveGranularity}
+                liveCandleCount={liveCandleCount}
+                setLiveCandleCount={setLiveCandleCount}
+                liveTradeUnits={liveTradeUnits}
+                setLiveTradeUnits={setLiveTradeUnits}
+                liveMinBalance={liveMinBalance}
+                setLiveMinBalance={setLiveMinBalance}
+                liveMaxPositions={liveMaxPositions}
+                setLiveMaxPositions={setLiveMaxPositions}
               />
             </>
           ) : (

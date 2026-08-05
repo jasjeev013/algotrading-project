@@ -85,3 +85,26 @@ class WalkForwardRun(Base):
     window_metrics = Column(JSON, nullable=False, default=list)
     trade_log = Column(JSON, nullable=False, default=list)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class LiveTradeRecord(Base):
+    """
+    Audit trail for the live bot (Phase 6). One row per instrument acted on
+    per tick, including noop and risk-guard-skip rows -- the point is a full
+    record of every decision the bot made, not just executed trades.
+    """
+
+    __tablename__ = "live_trade_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    instrument = Column(String, nullable=False)
+    strategy = Column(String, nullable=False)
+    action = Column(String, nullable=False)  # buy | sell | close | noop | error | skipped_risk_guard
+    desired_position = Column(String, nullable=False)  # long | short | flat
+    prior_position = Column(String, nullable=False)  # long | short | flat
+    units = Column(Integer, nullable=True)
+    signal_time = Column(String, nullable=False)
+    oanda_response = Column(JSON, nullable=True)
+    error_detail = Column(String, nullable=True)
+    account_balance_after = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

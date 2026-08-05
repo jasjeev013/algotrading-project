@@ -119,17 +119,19 @@ Dashboard restructured into 5 tabs: **Strategy Explorer**, **Walk-Forward Engine
 
 ---
 
-### Phase 5: OANDA API Integration
+### Phase 5: OANDA API Integration ✅ COMPLETE
 
-- [ ] **5.1 OANDA account setup** — Create a free OANDA Practice Account and generate an API token. Add credentials to `.env` as `OANDA_ACCOUNT_ID` and `OANDA_API_KEY`. Never commit these.
-- [ ] **5.2 Execution handler** — Create `execution_handler.py` using the `oandapyV20` library. Implement:
-  - `get_live_candles(instrument, count, granularity)` — fetch the last N candles
-  - `get_account_summary()` — returns balance, margin used, open positions
-  - `place_market_order(instrument, units, direction)` — send a market order
-  - `close_position(instrument)` — flatten an open position
-  - `get_open_positions()` — list all current positions with unrealised P&L
-- [ ] **5.3 Kill switch** — Implement `close_all_positions()` in `execution_handler.py`. This calls `close_position()` for every open trade. Expose it as `POST /api/live/kill_switch`. This endpoint must work even if the main bot loop is erroring.
-- [ ] **5.4 Validation endpoint** — Add `GET /api/live/account` to verify the OANDA connection and return account balance. Use this to confirm credentials are working before starting the bot.
+- [x] **5.1 OANDA account setup** — OANDA Practice Account + API token. Credentials read from `.env` (`OANDA_ACCOUNT_ID`, `OANDA_API_KEY`, `OANDA_ENVIRONMENT`) via `config.py`; `.env` stays git-ignored, `.env.example` documents the required keys.
+- [x] **5.2 Execution handler** — `execution_handler.py` (`OandaExecutionHandler`) built on `oandapyV20`. Implements:
+  - `get_live_candles(instrument, count, granularity)`
+  - `get_account_summary()`
+  - `get_open_positions()`
+  - `place_market_order(instrument, units, direction)` — hard-capped at `MAX_ORDER_UNITS = 1000` (Risk Rule 4)
+  - `close_position(instrument)`
+- [x] **5.3 Kill switch** — `close_all_positions()` iterates every open position and closes it, collecting per-instrument success/error rather than raising on the first failure. Exposed as `POST /api/live/kill_switch`.
+- [x] **5.4 Validation endpoint** — `GET /api/live/account` returns the practice account summary, confirming credentials/connectivity independent of any bot loop.
+
+**Not yet done (carried into Phase 7):** the frontend `LiveSidebar` / "Live Paper Trading" tab is still the static Phase-4.3.1 placeholder — it does not call `/api/live/account` or `/api/live/kill_switch` yet. That wiring is now explicit in Phase 7 below, since there's no live bot (Phase 6) driving the tab yet either.
 
 ---
 
@@ -158,17 +160,15 @@ Dashboard restructured into 5 tabs: **Strategy Explorer**, **Walk-Forward Engine
 
 ---
 
-### Phase 7: Dashboard V2 (Command Centre)
+### Phase 7: Wire Up the Live Paper Trading Tab
 
-- [ ] **7.1 Mode toggle** — Add a `[ Backtest | Live ]` toggle to the sidebar header. Switching modes changes which panels and controls are visible.
-- [ ] **7.2 Backtest history panel** — In Backtest mode, add a "Past Runs" section that fetches from `GET /api/backtests` and lists previous runs with their key metrics. Clicking a row loads that run's results without re-running the backtest.
-- [ ] **7.3 Live mode dashboard** — In Live mode, replace the backtest controls with:
-  - Account summary card (balance, margin used, equity)
-  - Active open positions table (instrument, direction, units, unrealised P&L — auto-refreshing every 30s)
-  - Bot status indicator (running/stopped, last heartbeat)
-  - Start / Stop bot buttons (connected to the control endpoints)
-- [ ] **7.4 Kill switch button** — Large red "LIQUIDATE ALL" button in Live mode. On click, shows a confirmation modal before calling `POST /api/live/kill_switch`. Display success/failure feedback immediately.
-- [ ] **7.5 Live equity ticker** — Poll `GET /api/live/account` every 60s and display a live-updating account equity value at the top of the sidebar.
+> The `[ Strategy Explorer | Walk-Forward | Live | Settings | History ]` tab rail and the `LiveSidebar` placeholder already exist from Phase 4 (Tab 3, item 4.3.1) — no new navigation shell is needed. This phase replaces the placeholder's static "—" values with real data from the Phase 5 endpoints and the Phase 6 bot, and only makes sense once Phase 6's bot/control endpoints exist to back the status indicator and Start/Stop buttons.
+
+- [ ] **7.1 Live account summary card** — Replace `LiveSidebar`'s static Balance/Margin/Equity rows with a `GET /api/live/account` fetch (Phase 5.4), polled every 60s.
+- [ ] **7.2 Open positions table** — Add an active-positions table (instrument, direction, units, unrealised P&L) sourced from `get_open_positions()`, auto-refreshing every 30s.
+- [ ] **7.3 Bot status indicator + controls** — Replace the static "Stopped" badge with the real state from `GET /api/live/status` (Phase 6.5), and wire Start/Stop buttons to `POST /api/live/start` / `POST /api/live/stop`.
+- [ ] **7.4 Kill switch button** — Enable the existing (currently `disabled`) "Liquidate All Positions" button. On click, show a confirmation modal before calling `POST /api/live/kill_switch` (Phase 5.3); surface success/failure per-instrument from the response.
+- [ ] **7.5 Remove "coming soon" messaging** — Drop the `live-badge` "COMING IN V2 PHASE 5–7" banner and the "Live execution ships in Phase 5–7" empty-state copy in `App.jsx` once 7.1–7.4 are live.
 
 ---
 
@@ -195,16 +195,16 @@ Phase 1 (Data)  →  Phase 2 (DB)
                         ↓
                Phase 4 (WFO + Strategies)
                         ↓
-               Phase 5 (OANDA)
+               Phase 5 (OANDA) ✅ COMPLETE
                         ↓
                Phase 6 (Live Bot)
                         ↓
-               Phase 7 (Dashboard V2)
+               Phase 7 (Wire Live Tab to Phase 5/6)
                         ↓
                Phase 8 (Docker + Cloud)
 ```
 
-Phase 1 (Data) and Phase 2 (DB) can be built in parallel. Everything from Phase 3 onward is sequential.
+Phase 1 (Data) and Phase 2 (DB) can be built in parallel. Everything from Phase 3 onward is sequential. Phase 7 has no independent build-out anymore — its shell (tab rail, `LiveSidebar`) already shipped in Phase 4, so it's purely wiring Phase 5's endpoints and Phase 6's bot into that existing UI.
 
 ---
 

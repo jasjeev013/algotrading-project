@@ -3,25 +3,20 @@ from typing import Dict, Any
 from sqlalchemy.orm import Session
 
 from data_fetcher import fetch_historical_data
-from strategies import SMACrossover, BollingerBands, MLRandomForest, StatArbitrageStrategy
+from strategy_registry import STRATEGY_REGISTRY, LIVE_ELIGIBLE_STRATEGIES
 from backtester import run_iterative_backtest
 from vectorized_backtester import run_vectorized_backtest
 from walk_forward_engine import run_walk_forward_backtest
 from analytics import calculate_metrics
 from market_regime import get_current_regime
 from database import get_db, init_db
-from models import BacktestRun, TradeRecord, WalkForwardRun
+from models import BacktestRun, TradeRecord, WalkForwardRun, LiveTradeRecord
 from execution_handler import OandaExecutionHandler
+from live_bot import bot_controller, logger as live_bot_logger, _adapt_candles
+from config import LIVE_TRADE_UNITS, MIN_ACCOUNT_BALANCE, MAX_OPEN_POSITIONS
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from data_fetcher import fetch_historical_data
-
-STRATEGY_REGISTRY = {
-    "SMA": SMACrossover,
-    "Bollinger": BollingerBands,
-    "ML": MLRandomForest,
-    "StatArb": StatArbitrageStrategy,
-}
 
 ENGINE_REGISTRY = {
     "iterative": run_iterative_backtest,
@@ -34,6 +29,12 @@ app = FastAPI(title="QuantDash API")
 @app.on_event("startup")
 def on_startup():
     init_db()
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    if bot_controller.is_running():
+        await bot_controller.stop()
 
 # Allow React frontend to talk to FastAPI
 app.add_middleware(
@@ -549,16 +550,12 @@ def get_walk_forward_run(run_id: int, db: Session = Depends(get_db)):
 # Unified History: a read-time merge over BacktestRun + WalkForwardRun, not a
 # physical table -- avoids dual-writing on every POST /api/backtest and
 # POST /api/walk-forward for what's fundamentally a presentational concern.
-# run_type "live" is reserved (unpopulated) so a future live-trades table
-# can be unioned in here later without changing this endpoint's contract.
+# run_type "live" is now populated from LiveTradeRecord (Phase 6).
 # ---------------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------------
-# Live Paper Trading (Phase 5): OANDA account validation + kill switch.
-# The full live bot loop is Phase 6 -- these two endpoints only validate
-# connectivity and provide an emergency flatten-all-positions control that
-# works independently of any bot loop (there is none yet).
+# Live Paper Trading (Phase 5 account/kill-switch + Phase 6 bot control).
 # ---------------------------------------------------------------------------
 
 
@@ -577,16 +574,128 @@ def get_live_account():
 
 
 @app.post("/api/live/kill_switch")
-def kill_switch():
+async def kill_switch():
     """
-    Emergency stop: closes every open position on the OANDA account.
+    Emergency stop: closes every open position on the OANDA account. Stops
+    the live bot first (best-effort) so it can't immediately reopen a
+    position on its next tick right after the flatten -- the kill switch
+    must be authoritative over the bot loop.
     """
+    if bot_controller.is_running():
+        try:
+            await bot_controller.stop()
+        except Exception as e:
+            live_bot_logger.warning("kill_switch: bot stop failed (%s), flattening anyway.", e)
+
     try:
         handler = OandaExecutionHandler()
         results = handler.close_all_positions()
         return {"status": "success", "results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class LiveBotStartRequest(BaseModel):
+    strategy: str
+    instrument: str = "EUR_USD"
+    interval_minutes: int = 15
+    strategy_params: Dict[str, Any] = {}
+    granularity: str = "M15"
+    candle_count: int = 100
+    trade_units: int = LIVE_TRADE_UNITS
+    min_account_balance: float = MIN_ACCOUNT_BALANCE
+    max_open_positions: int = MAX_OPEN_POSITIONS
+
+
+@app.post("/api/live/start")
+async def start_live_bot(request: LiveBotStartRequest):
+    if request.strategy not in LIVE_ELIGIBLE_STRATEGIES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"strategy must be one of {sorted(LIVE_ELIGIBLE_STRATEGIES)}",
+        )
+    try:
+        await bot_controller.start(
+            request.strategy,
+            request.instrument,
+            request.interval_minutes,
+            request.strategy_params,
+            granularity=request.granularity,
+            candle_count=request.candle_count,
+            trade_units=request.trade_units,
+            min_account_balance=request.min_account_balance,
+            max_open_positions=request.max_open_positions,
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return {"status": "success", **bot_controller.state}
+
+
+@app.post("/api/live/stop")
+async def stop_live_bot():
+    try:
+        await bot_controller.stop()
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return {"status": "success", **bot_controller.state}
+
+
+@app.get("/api/live/status")
+def live_bot_status():
+    try:
+        handler = OandaExecutionHandler()
+        open_positions = handler.get_open_positions()
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    return {"status": "success", **bot_controller.state, "open_positions": open_positions}
+
+
+@app.get("/api/live/candles")
+def get_live_candles(
+    instrument: str = Query("EUR_USD"),
+    granularity: str = Query("M15"),
+    count: int = Query(100, le=500),
+):
+    """
+    Recent OHLC candles for the Live Paper Trading chart. Reuses the same
+    candle adapter the bot's tick loop uses so the chart matches exactly
+    what the strategy sees.
+    """
+    try:
+        handler = OandaExecutionHandler()
+        raw_candles = handler.get_live_candles(instrument, count=count, granularity=granularity)
+        return {"status": "success", "candles": _adapt_candles(raw_candles)}
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.get("/api/live/trades")
+def list_live_trades(db: Session = Depends(get_db)):
+    """
+    Recent live bot activity (executed trades, noops, and risk-guard skips),
+    most recent first -- backs the Live Paper Trading tab's activity feed.
+    """
+    records = (
+        db.query(LiveTradeRecord).order_by(LiveTradeRecord.created_at.desc()).limit(200).all()
+    )
+    return {
+        "status": "success",
+        "trades": [
+            {
+                "id": r.id,
+                "instrument": r.instrument,
+                "strategy": r.strategy,
+                "action": r.action,
+                "desired_position": r.desired_position,
+                "prior_position": r.prior_position,
+                "units": r.units,
+                "signal_time": r.signal_time,
+                "error_detail": r.error_detail,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+            for r in records
+        ],
+    }
 
 
 @app.get("/api/history")
@@ -598,6 +707,9 @@ def list_history(db: Session = Depends(get_db)):
     backtest_runs = db.query(BacktestRun).order_by(BacktestRun.created_at.desc()).all()
     walk_forward_runs = (
         db.query(WalkForwardRun).order_by(WalkForwardRun.created_at.desc()).all()
+    )
+    live_trades = (
+        db.query(LiveTradeRecord).order_by(LiveTradeRecord.created_at.desc()).limit(200).all()
     )
 
     normalized = [
@@ -630,6 +742,17 @@ def list_history(db: Session = Depends(get_db)):
             "metrics": run.metrics,
         }
         for run in walk_forward_runs
+    ] + [
+        {
+            "run_id": trade.id,
+            "run_type": "live",
+            "instrument": trade.instrument,
+            "strategy": trade.strategy,
+            "action": trade.action,
+            "created_at": trade.created_at.isoformat() if trade.created_at else None,
+            "metrics": {"action": trade.action, "units": trade.units},
+        }
+        for trade in live_trades
     ]
 
     normalized.sort(key=lambda row: row["created_at"] or "", reverse=True)
