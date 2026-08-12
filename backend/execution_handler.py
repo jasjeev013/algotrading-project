@@ -103,7 +103,7 @@ class OandaExecutionHandler:
     def close_all_positions(self):
         """Emergency-stop path: flattens every open position, continuing past
         individual failures so one bad response can't block the rest of the book
-        from closing."""
+        from closing. Returns realized P/L extracted from OANDA's response."""
         results = []
         try:
             open_positions = self.get_open_positions()
@@ -113,9 +113,24 @@ class OandaExecutionHandler:
         for pos in open_positions:
             instrument = pos.get("instrument")
             try:
-                self.close_position(instrument)
-                results.append({"instrument": instrument, "status": "closed"})
+                response = self.close_position(instrument)
+                pl = _extract_realized_pl(response)
+                results.append({"instrument": instrument, "status": "closed", "realized_pl": pl})
             except RuntimeError as e:
                 results.append({"instrument": instrument, "status": "error", "detail": str(e)})
 
         return results
+
+
+def _extract_realized_pl(response: dict) -> float | None:
+    """Extract realized P/L from an OANDA PositionClose response."""
+    if not response or not isinstance(response, dict):
+        return None
+    for key in ("orderFillTransaction", "longOrderFillTransaction", "shortOrderFillTransaction"):
+        txn = response.get(key)
+        if txn and "pl" in txn:
+            try:
+                return float(txn["pl"])
+            except (TypeError, ValueError):
+                pass
+    return None

@@ -45,3 +45,14 @@ def _run_lightweight_migrations():
                 )
             )
             conn.commit()
+
+        try:
+            live_cols = {
+                row[1]
+                for row in conn.execute(text("PRAGMA table_info(live_trade_records)"))
+            }
+            if live_cols and "realized_pl" not in live_cols:
+                conn.execute(text("ALTER TABLE live_trade_records ADD COLUMN realized_pl REAL"))
+                conn.commit()
+        except Exception:
+            pass

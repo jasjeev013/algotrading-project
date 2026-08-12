@@ -48,6 +48,21 @@ const LiveSidebar = ({
     }
   };
 
+  const handleStopAndLiquidate = async () => {
+    if (!window.confirm("Stop the bot AND liquidate all open positions? This cannot be undone.")) return;
+    setPending(true);
+    setError(null);
+    try {
+      const res = await axios.post(`${API_BASE}/api/live/kill_switch`);
+      setKillResults(res.data.results);
+      onStatusChange?.((prev) => ({ ...prev, running: false }));
+    } catch (err) {
+      setError(err.response?.data?.detail || "Stop & Liquidate failed.");
+    } finally {
+      setPending(false);
+    }
+  };
+
   const handleKillSwitch = async () => {
     if (!window.confirm("Liquidate all open positions? This cannot be undone.")) return;
     setPending(true);
@@ -55,6 +70,7 @@ const LiveSidebar = ({
     try {
       const res = await axios.post(`${API_BASE}/api/live/kill_switch`);
       setKillResults(res.data.results);
+      onStatusChange?.((prev) => ({ ...prev, running: false }));
     } catch (err) {
       setError(err.response?.data?.detail || "Kill switch failed.");
     } finally {
@@ -132,15 +148,25 @@ const LiveSidebar = ({
           Poll interval, candle feed, trade size, and risk guards come from
           Advanced Settings → Live Bot Defaults.
         </p>
+
         {!running ? (
           <button className="run-btn live-run-btn" onClick={handleStart} disabled={pending}>
             {pending ? "Starting…" : "Start Bot"}
           </button>
         ) : (
-          <button className="run-btn live-stop-btn" onClick={handleStop} disabled={pending}>
-            {pending ? "Stopping…" : "Stop Bot"}
-          </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <button className="run-btn live-stop-btn" onClick={handleStop} disabled={pending}>
+              {pending ? "Stopping…" : "Stop Bot"}
+            </button>
+            <p className="field-hint" style={{ margin: 0 }}>
+              Stop Bot pauses the loop — open positions stay open. Use Stop &amp; Liquidate below to also close them.
+            </p>
+            <button className="kill-btn active" onClick={handleStopAndLiquidate} disabled={pending}>
+              {pending ? "Stopping…" : "Stop & Liquidate All"}
+            </button>
+          </div>
         )}
+
         {error && <p className="live-error">{error}</p>}
       </div>
 
@@ -160,17 +186,25 @@ const LiveSidebar = ({
         </div>
       )}
 
-      <button className="kill-btn active" onClick={handleKillSwitch} disabled={pending}>
-        Liquidate All Positions
-      </button>
+      {!running && (
+        <button className="kill-btn active" onClick={handleKillSwitch} disabled={pending}>
+          Liquidate All Positions
+        </button>
+      )}
 
       {killResults && (
         <div className="live-preview-card">
-          <h4>Kill Switch Result</h4>
+          <h4>Liquidation Result</h4>
           {killResults.map((r, i) => (
             <div className="live-preview-row" key={i}>
               <span>{r.instrument ?? "—"}</span>
-              <span>{r.status === "closed" ? "closed" : `error — ${r.detail}`}</span>
+              <span>
+                {r.status === "closed"
+                  ? r.realized_pl != null
+                    ? `closed  P/L: ${parseFloat(r.realized_pl) >= 0 ? "+" : ""}${parseFloat(r.realized_pl).toFixed(2)}`
+                    : "closed"
+                  : `error — ${r.detail}`}
+              </span>
             </div>
           ))}
         </div>

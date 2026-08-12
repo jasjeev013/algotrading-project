@@ -1,9 +1,50 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
+const NYSE_OPEN_HOUR = 9 * 60 + 30;   // 09:30 ET in minutes
+const NYSE_CLOSE_HOUR = 16 * 60;       // 16:00 ET in minutes
+const PREMARKET_OPEN = 4 * 60;         // 04:00 ET
+const AFTERHOURS_CLOSE = 20 * 60;      // 20:00 ET
+
+function getMarketStatus(now) {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(now);
+  const weekday = parts.find((p) => p.type === "weekday")?.value;
+  const hour = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10);
+  const minute = parseInt(parts.find((p) => p.type === "minute")?.value ?? "0", 10);
+
+  if (weekday === "Sat" || weekday === "Sun") return "closed";
+  const tod = hour * 60 + minute;
+  if (tod >= NYSE_OPEN_HOUR && tod < NYSE_CLOSE_HOUR) return "open";
+  if (tod >= PREMARKET_OPEN && tod < NYSE_OPEN_HOUR) return "pre-market";
+  if (tod >= NYSE_CLOSE_HOUR && tod < AFTERHOURS_CLOSE) return "after-hours";
+  return "closed";
+}
+
+const MARKET_LABEL = {
+  open: "Market Open",
+  "pre-market": "Pre-Market",
+  "after-hours": "After-Hours",
+  closed: "Market Closed",
+};
+
+const MARKET_DOT_CLASS = {
+  open: "online",
+  "pre-market": "warning",
+  "after-hours": "warning",
+  closed: "offline",
+};
+
 const TopBar = ({ mode }) => {
   const [connected, setConnected] = useState(null);
   const [now, setNow] = useState(new Date());
+  const [marketStatus, setMarketStatus] = useState(() => getMarketStatus(new Date()));
 
   useEffect(() => {
     let cancelled = false;
@@ -24,7 +65,11 @@ const TopBar = ({ mode }) => {
   }, []);
 
   useEffect(() => {
-    const clock = setInterval(() => setNow(new Date()), 1000);
+    const clock = setInterval(() => {
+      const n = new Date();
+      setNow(n);
+      setMarketStatus(getMarketStatus(n));
+    }, 1000);
     return () => clearInterval(clock);
   }, []);
 
@@ -43,12 +88,18 @@ const TopBar = ({ mode }) => {
                   ? "Advanced Settings"
                   : mode === "history"
                     ? "Activity History"
-                    : "Strategy Explorer"}
+                    : mode === "about"
+                      ? "About QuantDash"
+                      : "Strategy Explorer"}
           </span>
         </div>
       </div>
 
       <div className="topbar-status">
+        <div className="status-pill">
+          <span className={`status-dot ${MARKET_DOT_CLASS[marketStatus]}`} />
+          {MARKET_LABEL[marketStatus]}
+        </div>
         <div className="status-pill">
           <span
             className={`status-dot ${connected === null ? "" : connected ? "online" : "offline"}`}

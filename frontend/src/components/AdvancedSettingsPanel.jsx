@@ -91,15 +91,15 @@ const AdvancedSettingsPanel = ({
 
       <div className="input-row">
         <div className="input-group">
-          <label>Poll Interval (minutes)</label>
+          <label>Poll Interval (seconds)</label>
           <input
             type="number"
             step="1"
-            min="1"
+            min="10"
             value={livePollMinutes}
             onChange={(e) => setLivePollMinutes(e.target.value)}
           />
-          <p className="field-hint">How often the bot fetches candles and re-evaluates its signal.</p>
+          <p className="field-hint">How often the bot fetches candles and re-evaluates its signal. Min 10 s. Setting below your candle granularity catches new candle closes faster.</p>
         </div>
         <div className="input-group">
           <label>Candle Granularity</label>

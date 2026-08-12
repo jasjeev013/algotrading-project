@@ -36,6 +36,13 @@ const ICONS = {
       <path d="M12 7v5l3.5 2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  about: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 17v-5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="8" r="0.5" fill="currentColor" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  ),
 };
 
 const NAV_ITEMS = [
@@ -44,6 +51,7 @@ const NAV_ITEMS = [
   { mode: "live", label: "Live Paper Trading" },
   { mode: "settings", label: "Advanced Settings" },
   { mode: "history", label: "History" },
+  { mode: "about", label: "About" },
 ];
 
 const NavRail = ({ mode, onSelect }) => {

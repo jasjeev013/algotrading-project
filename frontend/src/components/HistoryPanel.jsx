@@ -48,7 +48,7 @@ const HistoryPanel = ({ runs, loading, error, onSelectRun }) => {
         <div className="empty-state">
           <div className="empty-icon">🗂️</div>
           {filter === "live"
-            ? "Live paper trading isn't wired up yet — this filter will populate once it ships."
+            ? "No live trades recorded yet. Start the bot to see activity here."
             : "No saved runs yet. Run a backtest or walk-forward to see it appear here."}
         </div>
       ) : (
@@ -57,7 +57,7 @@ const HistoryPanel = ({ runs, loading, error, onSelectRun }) => {
             <thead>
               <tr>
                 <th>Type</th>
-                <th>Ticker</th>
+                <th>Ticker / Instrument</th>
                 <th>Strategy</th>
                 <th>Date Range</th>
                 <th>Total Return</th>
@@ -66,44 +66,46 @@ const HistoryPanel = ({ runs, loading, error, onSelectRun }) => {
               </tr>
             </thead>
             <tbody>
-              {filteredRuns.map((run) => (
-                <tr
-                  key={`${run.run_type}-${run.run_id}`}
-                  className="history-row"
-                  onClick={() => onSelectRun(run)}
-                  style={{ cursor: "pointer" }}
-                >
-                  <td>
-                    <span className={`history-type-badge ${run.run_type}`}>
-                      {TYPE_LABELS[run.run_type] || run.run_type}
-                    </span>
-                  </td>
-                  <td>{run.ticker}</td>
-                  <td>{run.strategy}</td>
-                  <td>
-                    {run.start_date} → {run.end_date}
-                  </td>
-                  <td
-                    className={
-                      run.metrics?.total_return_pct >= 0 ? "positive" : "negative"
-                    }
+              {filteredRuns.map((run) => {
+                const isLive = run.run_type === "live";
+                const tickerCell = isLive ? (run.instrument ?? run.ticker ?? "—") : (run.ticker ?? "—");
+                const dateCell = isLive
+                  ? (run.start_date ? run.start_date.slice(0, 10) : "—")
+                  : `${run.start_date ?? "?"} → ${run.end_date ?? "?"}`;
+                const returnVal = run.metrics?.total_return_pct;
+                const sharpeVal = run.metrics?.sharpe_ratio;
+
+                return (
+                  <tr
+                    key={`${run.run_type}-${run.run_id}`}
+                    className={`history-row ${!isLive ? "clickable" : ""}`}
+                    onClick={!isLive ? () => onSelectRun(run) : undefined}
+                    style={{ cursor: isLive ? "default" : "pointer" }}
                   >
-                    {run.metrics?.total_return_pct != null
-                      ? `${run.metrics.total_return_pct.toFixed(2)}%`
-                      : "—"}
-                  </td>
-                  <td>
-                    {run.metrics?.sharpe_ratio != null
-                      ? run.metrics.sharpe_ratio.toFixed(2)
-                      : "—"}
-                  </td>
-                  <td>
-                    {run.created_at
-                      ? new Date(run.created_at).toLocaleString()
-                      : "—"}
-                  </td>
-                </tr>
-              ))}
+                    <td>
+                      <span className={`history-type-badge ${run.run_type}`}>
+                        {isLive
+                          ? `Live · ${run.action ?? "tick"}`
+                          : (TYPE_LABELS[run.run_type] || run.run_type)}
+                      </span>
+                    </td>
+                    <td>{tickerCell}</td>
+                    <td>{run.strategy ?? "—"}</td>
+                    <td>{dateCell}</td>
+                    <td className={returnVal >= 0 ? "positive" : returnVal < 0 ? "negative" : ""}>
+                      {returnVal != null ? `${returnVal.toFixed(2)}%` : "—"}
+                    </td>
+                    <td>
+                      {sharpeVal != null ? sharpeVal.toFixed(2) : "—"}
+                    </td>
+                    <td>
+                      {run.created_at
+                        ? new Date(run.created_at).toLocaleString()
+                        : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

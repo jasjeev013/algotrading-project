@@ -6,7 +6,7 @@ from logging.handlers import RotatingFileHandler
 
 from config import LIVE_TRADE_UNITS, MIN_ACCOUNT_BALANCE, MAX_OPEN_POSITIONS
 from database import SessionLocal
-from execution_handler import OandaExecutionHandler
+from execution_handler import OandaExecutionHandler, _extract_realized_pl
 from models import LiveTradeRecord
 from strategy_registry import STRATEGY_REGISTRY, LIVE_ELIGIBLE_STRATEGIES
 
@@ -106,7 +106,7 @@ class LiveBotController:
             "running": False,
             "strategy": None,
             "instrument": None,
-            "interval_minutes": None,
+            "interval_seconds": None,
             "granularity": None,
             "candle_count": None,
             "trade_units": None,
@@ -124,9 +124,9 @@ class LiveBotController:
         self,
         strategy: str,
         instrument: str,
-        interval_minutes: int,
+        interval_seconds: int,
         strategy_params: dict | None = None,
-        granularity: str = "M15",
+        granularity: str = "M1",
         candle_count: int = 100,
         trade_units: int = LIVE_TRADE_UNITS,
         min_account_balance: float = MIN_ACCOUNT_BALANCE,
@@ -148,7 +148,7 @@ class LiveBotController:
                     "running": True,
                     "strategy": strategy,
                     "instrument": instrument,
-                    "interval_minutes": interval_minutes,
+                    "interval_seconds": interval_seconds,
                     "granularity": granularity,
                     "candle_count": candle_count,
                     "trade_units": trade_units,
@@ -163,18 +163,18 @@ class LiveBotController:
                 self._run_loop(
                     strategy,
                     instrument,
-                    interval_minutes,
+                    interval_seconds,
                     strategy_params or {},
                     granularity,
                     candle_count,
                 )
             )
             logger.info(
-                "Live bot started: strategy=%s instrument=%s interval_minutes=%s "
+                "Live bot started: strategy=%s instrument=%s interval_seconds=%s "
                 "granularity=%s trade_units=%s min_balance=%s max_positions=%s",
                 strategy,
                 instrument,
-                interval_minutes,
+                interval_seconds,
                 granularity,
                 trade_units,
                 min_account_balance,
@@ -199,7 +199,7 @@ class LiveBotController:
                 logger.info("Live bot stopped.")
 
     async def _run_loop(
-        self, strategy, instrument, interval_minutes, strategy_params, granularity, candle_count
+        self, strategy, instrument, interval_seconds, strategy_params, granularity, candle_count
     ):
         try:
             while not self._stop_event.is_set():
@@ -212,7 +212,7 @@ class LiveBotController:
 
                 try:
                     await asyncio.wait_for(
-                        self._stop_event.wait(), timeout=interval_minutes * 60
+                        self._stop_event.wait(), timeout=interval_seconds
                     )
                 except asyncio.TimeoutError:
                     continue
@@ -249,14 +249,17 @@ class LiveBotController:
             handler, instrument, desired, prior
         )
 
+        realized_pl = _extract_realized_pl(oanda_response) if oanda_response else None
+
         self.state["last_action"] = action
         logger.info(
-            "Tick %s: instrument=%s prior=%s desired=%s action=%s",
+            "Tick %s: instrument=%s prior=%s desired=%s action=%s pl=%s",
             signal_time,
             instrument,
             prior,
             desired,
             action,
+            realized_pl,
         )
         self._log_trade(
             instrument=instrument,
@@ -269,6 +272,7 @@ class LiveBotController:
             oanda_response=oanda_response,
             error_detail=error_detail,
             account_balance_after=balance_after,
+            realized_pl=realized_pl,
         )
 
     def _reconcile(self, handler, instrument, desired, prior):

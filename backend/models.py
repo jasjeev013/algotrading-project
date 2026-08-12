@@ -107,4 +107,5 @@ class LiveTradeRecord(Base):
     oanda_response = Column(JSON, nullable=True)
     error_detail = Column(String, nullable=True)
     account_balance_after = Column(Float, nullable=True)
+    realized_pl = Column(Float, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

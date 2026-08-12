@@ -15,7 +15,29 @@ import TradingChart from "./components/TradingChart";
 import EquityCurveChart from "./components/EquityCurveChart";
 import FeatureImportancePanel from "./components/FeatureImportancePanel";
 import WalkForwardTable from "./components/WalkForwardTable";
+import AboutPanel from "./components/AboutPanel";
 import "./App.css";
+
+// Load a value from localStorage, falling back to defaultValue.
+function lsGet(key, defaultValue) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw !== null ? JSON.parse(raw) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+}
+
+// Persist a value to localStorage whenever it changes.
+function usePersisted(key, defaultValue) {
+  const [value, setValue] = useState(() => lsGet(key, defaultValue));
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {}
+  }, [key, value]);
+  return [value, setValue];
+}
 
 const API_BASE = "http://localhost:8000";
 
@@ -35,10 +57,9 @@ const NON_FITTING_STRATEGIES = ["SMA", "Bollinger"];
 
 function App() {
   // --- MODE ---
-  const [mode, setMode] = useState("backtest"); // 'backtest' | 'walkforward' | 'live' | 'settings' | 'history'
+  const [mode, setMode] = useState("backtest"); // 'backtest' | 'walkforward' | 'live' | 'settings' | 'history' | 'about'
 
-  // --- SHARED STATE (instrument/strategy selection used by both Backtest and
-  // Walk-Forward tabs) ---
+  // --- SHARED STATE ---
   const [ticker, setTicker] = useState("AAPL");
   const [startDate, setStartDate] = useState("2020-01-01");
   const [endDate, setEndDate] = useState("2023-01-01");
@@ -49,25 +70,22 @@ function App() {
   const [pairTicker, setPairTicker] = useState("MSFT");
   const [engine, setEngine] = useState("iterative");
 
-  // --- COSTS (Advanced Settings — global defaults, displayed as %,
-  // converted to decimals when sent to the API; no per-run overrides) ---
-  const [commissionPct, setCommissionPct] = useState(0.1);
-  const [spreadPct, setSpreadPct] = useState(0.02);
-  const [slippagePct, setSlippagePct] = useState(0.01);
-  const [financingPct, setFinancingPct] = useState(0);
+  // --- COSTS (persisted to localStorage) ---
+  const [commissionPct, setCommissionPct] = usePersisted("qs_commissionPct", 0.1);
+  const [spreadPct, setSpreadPct] = usePersisted("qs_spreadPct", 0.02);
+  const [slippagePct, setSlippagePct] = usePersisted("qs_slippagePct", 0.01);
+  const [financingPct, setFinancingPct] = usePersisted("qs_financingPct", 0);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
 
-  // --- UNIFIED HISTORY (backtests + walk-forward runs, merged server-side
-  // by GET /api/history) ---
+  // --- UNIFIED HISTORY ---
   const [historyRuns, setHistoryRuns] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(null);
 
-  // --- WALK-FORWARD (separate mode: its own settings and results, decoupled
-  // from the plain Backtest flow above) ---
+  // --- WALK-FORWARD ---
   const [wfTrainMonths, setWfTrainMonths] = useState(12);
   const [wfTradeMonths, setWfTradeMonths] = useState(3);
   const [wfStepMonths, setWfStepMonths] = useState("");
@@ -81,15 +99,14 @@ function App() {
   const [liveStrategy, setLiveStrategy] = useState("SMA");
   const [liveInstrument, setLiveInstrument] = useState("EUR_USD");
 
-  // Configurable in Advanced Settings — global defaults for the live bot,
-  // mirroring how the cost model works for Backtest/Walk-Forward: one place
-  // to set them, no per-run overrides.
-  const [livePollMinutes, setLivePollMinutes] = useState(15);
-  const [liveGranularity, setLiveGranularity] = useState("M15");
-  const [liveCandleCount, setLiveCandleCount] = useState(100);
-  const [liveTradeUnits, setLiveTradeUnits] = useState(100);
-  const [liveMinBalance, setLiveMinBalance] = useState(100);
-  const [liveMaxPositions, setLiveMaxPositions] = useState(3);
+  // Live bot settings — persisted to localStorage so they survive reloads.
+  // livePollSeconds: poll interval in seconds (default 60; min 10).
+  const [livePollSeconds, setLivePollSeconds] = usePersisted("qs_livePollSeconds", 60);
+  const [liveGranularity, setLiveGranularity] = usePersisted("qs_liveGranularity", "M1");
+  const [liveCandleCount, setLiveCandleCount] = usePersisted("qs_liveCandleCount", 100);
+  const [liveTradeUnits, setLiveTradeUnits] = usePersisted("qs_liveTradeUnits", 100);
+  const [liveMinBalance, setLiveMinBalance] = usePersisted("qs_liveMinBalance", 100);
+  const [liveMaxPositions, setLiveMaxPositions] = usePersisted("qs_liveMaxPositions", 3);
 
   const [liveAccount, setLiveAccount] = useState(null);
   const [liveStatus, setLiveStatus] = useState(null);
@@ -159,16 +176,19 @@ function App() {
       }
     };
 
+    // Poll at the same cadence as the bot, minimum 5 s for the UI.
+    const pollMs = Math.max(5000, parseInt(livePollSeconds, 10) * 1000);
+
     fetchCandles();
     fetchTrades();
-    const candlePoll = setInterval(fetchCandles, 15000);
-    const tradePoll = setInterval(fetchTrades, 15000);
+    const candlePoll = setInterval(fetchCandles, pollMs);
+    const tradePoll = setInterval(fetchTrades, pollMs);
     return () => {
       cancelled = true;
       clearInterval(candlePoll);
       clearInterval(tradePoll);
     };
-  }, [mode, liveInstrument, liveGranularity, liveCandleCount]);
+  }, [mode, liveInstrument, liveGranularity, liveCandleCount, livePollSeconds]);
 
   const buildParamsForStrategy = () => {
     if (strategy === "SMA") {
@@ -546,7 +566,7 @@ function App() {
               status={liveStatus}
               onStatusChange={setLiveStatus}
               startPayload={{
-                interval_minutes: parseInt(livePollMinutes, 10),
+                interval_seconds: parseInt(livePollSeconds, 10),
                 granularity: liveGranularity,
                 candle_count: parseInt(liveCandleCount, 10),
                 trade_units: parseInt(liveTradeUnits, 10),
@@ -556,6 +576,8 @@ function App() {
             />
           ) : mode === "settings" ? (
             <AdvancedSettingsSidebar />
+          ) : mode === "about" ? (
+            null
           ) : (
             <HistorySidebar onRefresh={fetchHistory} loading={historyLoading} />
           )}
@@ -797,8 +819,8 @@ function App() {
                 setSlippagePct={setSlippagePct}
                 financingPct={financingPct}
                 setFinancingPct={setFinancingPct}
-                livePollMinutes={livePollMinutes}
-                setLivePollMinutes={setLivePollMinutes}
+                livePollMinutes={livePollSeconds}
+                setLivePollMinutes={setLivePollSeconds}
                 liveGranularity={liveGranularity}
                 setLiveGranularity={setLiveGranularity}
                 liveCandleCount={liveCandleCount}
@@ -810,6 +832,14 @@ function App() {
                 liveMaxPositions={liveMaxPositions}
                 setLiveMaxPositions={setLiveMaxPositions}
               />
+            </>
+          ) : mode === "about" ? (
+            <>
+              <h1>About QuantDash</h1>
+              <p className="subtitle">
+                Reference guide for metrics, strategies, tickers, and platform concepts.
+              </p>
+              <AboutPanel />
             </>
           ) : (
             <>

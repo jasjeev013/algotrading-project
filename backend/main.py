@@ -574,13 +574,16 @@ def get_live_account():
 
 
 @app.post("/api/live/kill_switch")
-async def kill_switch():
+async def kill_switch(db: Session = Depends(get_db)):
     """
     Emergency stop: closes every open position on the OANDA account. Stops
     the live bot first (best-effort) so it can't immediately reopen a
     position on its next tick right after the flatten -- the kill switch
     must be authoritative over the bot loop.
     """
+    strategy = bot_controller.state.get("strategy") or "manual"
+    instrument_hint = bot_controller.state.get("instrument") or "unknown"
+
     if bot_controller.is_running():
         try:
             await bot_controller.stop()
@@ -590,6 +593,28 @@ async def kill_switch():
     try:
         handler = OandaExecutionHandler()
         results = handler.close_all_positions()
+
+        # Log each closed position as a LiveTradeRecord with realized P/L.
+        from datetime import datetime, timezone as _tz
+        now_str = datetime.now(_tz.utc).isoformat()
+        for r in results:
+            if r.get("status") == "closed":
+                pl = r.get("realized_pl")
+                db.add(LiveTradeRecord(
+                    instrument=r.get("instrument") or instrument_hint,
+                    strategy=strategy,
+                    action="close",
+                    desired_position="flat",
+                    prior_position="open",
+                    units=None,
+                    signal_time=now_str,
+                    oanda_response=None,
+                    error_detail="kill_switch",
+                    account_balance_after=None,
+                    realized_pl=float(pl) if pl is not None else None,
+                ))
+        db.commit()
+
         return {"status": "success", "results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -598,9 +623,9 @@ async def kill_switch():
 class LiveBotStartRequest(BaseModel):
     strategy: str
     instrument: str = "EUR_USD"
-    interval_minutes: int = 15
+    interval_seconds: int = 60
     strategy_params: Dict[str, Any] = {}
-    granularity: str = "M15"
+    granularity: str = "M1"
     candle_count: int = 100
     trade_units: int = LIVE_TRADE_UNITS
     min_account_balance: float = MIN_ACCOUNT_BALANCE
@@ -614,11 +639,12 @@ async def start_live_bot(request: LiveBotStartRequest):
             status_code=400,
             detail=f"strategy must be one of {sorted(LIVE_ELIGIBLE_STRATEGIES)}",
         )
+    interval = max(10, request.interval_seconds)  # enforce minimum 10 s
     try:
         await bot_controller.start(
             request.strategy,
             request.instrument,
-            request.interval_minutes,
+            interval,
             request.strategy_params,
             granularity=request.granularity,
             candle_count=request.candle_count,
@@ -691,6 +717,7 @@ def list_live_trades(db: Session = Depends(get_db)):
                 "units": r.units,
                 "signal_time": r.signal_time,
                 "error_detail": r.error_detail,
+                "realized_pl": r.realized_pl,
                 "created_at": r.created_at.isoformat() if r.created_at else None,
             }
             for r in records
@@ -708,8 +735,13 @@ def list_history(db: Session = Depends(get_db)):
     walk_forward_runs = (
         db.query(WalkForwardRun).order_by(WalkForwardRun.created_at.desc()).all()
     )
+    # Only include actionable live records (exclude noops / risk-guard skips).
     live_trades = (
-        db.query(LiveTradeRecord).order_by(LiveTradeRecord.created_at.desc()).limit(200).all()
+        db.query(LiveTradeRecord)
+        .filter(LiveTradeRecord.action.notin_(["noop", "skipped_risk_guard"]))
+        .order_by(LiveTradeRecord.created_at.desc())
+        .limit(50)
+        .all()
     )
 
     normalized = [
@@ -746,11 +778,18 @@ def list_history(db: Session = Depends(get_db)):
         {
             "run_id": trade.id,
             "run_type": "live",
+            # Map instrument → ticker so the HistoryPanel column renders correctly.
+            "ticker": trade.instrument,
             "instrument": trade.instrument,
             "strategy": trade.strategy,
             "action": trade.action,
+            "start_date": trade.signal_time[:10] if trade.signal_time else None,
+            "end_date": trade.signal_time[:10] if trade.signal_time else None,
             "created_at": trade.created_at.isoformat() if trade.created_at else None,
-            "metrics": {"action": trade.action, "units": trade.units},
+            "metrics": {
+                "total_return_pct": trade.realized_pl,
+                "sharpe_ratio": None,
+            },
         }
         for trade in live_trades
     ]

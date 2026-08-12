@@ -29,7 +29,7 @@ const LivePanel = ({ instrument, candles, trades, status }) => {
       <div className="section-block">
         <h2>Live Price Chart</h2>
         <p className="section-desc">
-          {instrument} · candles refresh every 15s. Green = Buy, Red = Sell, Orange = Close.
+          {instrument} · candles refresh on every poll. Green = Buy, Red = Sell, Orange = Close.
         </p>
         {candles && candles.length > 0 ? (
           <LiveChart candles={candles} trades={trades} instrument={instrument} />
@@ -80,7 +80,7 @@ const LivePanel = ({ instrument, candles, trades, status }) => {
 
       <div className="section-block">
         <h2>Live Trade Log</h2>
-        <p className="section-desc">Every tick the bot has evaluated — actions, no-ops, and risk-guard skips.</p>
+        <p className="section-desc">Every tick evaluated — actions, no-ops, and risk-guard skips.</p>
         <div className="table-container">
           <table>
             <thead>
@@ -91,6 +91,7 @@ const LivePanel = ({ instrument, candles, trades, status }) => {
                 <th>Prior → Desired</th>
                 <th>Action</th>
                 <th>Units</th>
+                <th>P/L</th>
                 <th>Detail</th>
               </tr>
             </thead>
@@ -105,12 +106,17 @@ const LivePanel = ({ instrument, candles, trades, status }) => {
                   </td>
                   <td className={ACTION_CLASS[t.action] || ""}>{t.action}</td>
                   <td>{t.units ?? "—"}</td>
+                  <td className={t.realized_pl != null ? (parseFloat(t.realized_pl) >= 0 ? "positive" : "negative") : ""}>
+                    {t.realized_pl != null
+                      ? `${parseFloat(t.realized_pl) >= 0 ? "+" : ""}${parseFloat(t.realized_pl).toFixed(2)}`
+                      : "—"}
+                  </td>
                   <td>{t.error_detail ?? "—"}</td>
                 </tr>
               ))}
               {(!trades || trades.length === 0) && (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: "center", color: "var(--text-muted)" }}>
+                  <td colSpan="8" style={{ textAlign: "center", color: "var(--text-muted)" }}>
                     No live activity yet — start the bot to see ticks here.
                   </td>
                 </tr>

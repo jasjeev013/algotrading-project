@@ -13,21 +13,20 @@ const ACTION_MARKER = {
 };
 
 const toChartTime = (isoString) => {
-  // OANDA candle times look like "2024-01-01T00:00:00.000000000Z" —
-  // lightweight-charts wants seconds-resolution UTC.
   const ms = Date.parse(isoString);
   return Number.isNaN(ms) ? undefined : Math.floor(ms / 1000);
 };
 
 const LiveChart = ({ candles, trades, instrument }) => {
-  const chartContainerRef = useRef();
-  const chartRef = useRef();
+  const containerRef = useRef();
+  const chartRef = useRef(null);
+  const seriesRef = useRef(null);
+  const markersPluginRef = useRef(null);
 
+  // Create chart once on mount — never destroy/recreate on data updates.
   useEffect(() => {
-    if (!candles || candles.length === 0) return undefined;
-
-    const chart = createChart(chartContainerRef.current, {
-      width: chartContainerRef.current.clientWidth,
+    const chart = createChart(containerRef.current, {
+      width: containerRef.current.clientWidth,
       height: 400,
       layout: {
         background: { color: "transparent" },
@@ -47,19 +46,53 @@ const LiveChart = ({ candles, trades, instrument }) => {
     });
     chartRef.current = chart;
 
-    const candleSeries = chart.addSeries(CandlestickSeries, {
+    const series = chart.addSeries(CandlestickSeries, {
       upColor: "#4CAF50",
       downColor: "#f44336",
       borderVisible: false,
       wickUpColor: "#4CAF50",
       wickDownColor: "#f44336",
     });
+    seriesRef.current = series;
+
+    const handleResize = () => {
+      if (containerRef.current) {
+        chart.applyOptions({ width: containerRef.current.clientWidth });
+      }
+    };
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
+      markersPluginRef.current = null;
+    };
+  }, []);
+
+  // Update candle data — preserve the user's zoom/scroll viewport.
+  useEffect(() => {
+    const series = seriesRef.current;
+    const chart = chartRef.current;
+    if (!series || !chart || !candles || candles.length === 0) return;
 
     const priceData = candles
       .map((c) => ({ ...c, time: toChartTime(c.time) }))
       .filter((c) => c.time !== undefined)
       .sort((a, b) => a.time - b.time);
-    candleSeries.setData(priceData);
+
+    const visibleRange = chart.timeScale().getVisibleLogicalRange();
+    series.setData(priceData);
+    if (visibleRange) {
+      chart.timeScale().setVisibleLogicalRange(visibleRange);
+    }
+  }, [candles]);
+
+  // Update trade markers without touching the viewport.
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series) return;
 
     const actionable = new Set(["buy", "sell", "close"]);
     const markers = (trades || [])
@@ -79,24 +112,16 @@ const LiveChart = ({ candles, trades, instrument }) => {
       .filter(Boolean)
       .sort((a, b) => a.time - b.time);
 
-    if (markers.length > 0) {
-      createSeriesMarkers(candleSeries, markers);
+    if (markersPluginRef.current) {
+      markersPluginRef.current.setMarkers(markers);
+    } else if (markers.length > 0) {
+      markersPluginRef.current = createSeriesMarkers(series, markers);
     }
-
-    const handleResize = () => {
-      chart.applyOptions({ width: chartContainerRef.current.clientWidth });
-    };
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      chart.remove();
-    };
-  }, [candles, trades, instrument]);
+  }, [trades, instrument]);
 
   return (
     <div
-      ref={chartContainerRef}
+      ref={containerRef}
       style={{
         position: "relative",
         width: "100%",
