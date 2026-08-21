@@ -1,9 +1,14 @@
+# Environment
+*.env
+
 # Backend
 backend/venv/
 backend/__pycache__/
+backend/logs/
 
 # Frontend
 frontend/node_modules/
 .DS_Store
 
 scripts.txt
+comments.txt
