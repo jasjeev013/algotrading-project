@@ -648,6 +648,7 @@ function App() {
                       <TradingChart
                         priceData={results.price_data}
                         tradeLog={results.trade_log}
+                        indicatorData={results.indicator_data || {}}
                       />
                     </div>
                   )}
@@ -750,6 +751,7 @@ function App() {
                       <TradingChart
                         priceData={wfResults.price_data}
                         tradeLog={wfResults.trade_log}
+                        indicatorData={wfResults.indicator_data || {}}
                       />
                     </div>
                   )}
