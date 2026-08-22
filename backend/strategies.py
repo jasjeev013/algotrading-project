@@ -48,6 +48,11 @@ class SMACrossover(BaseStrategy):
     Goes Short (-1) when Fast SMA < Slow SMA.
     """
 
+    INDICATOR_COLUMNS = [
+        {"key": "sma_short", "label": "SMA Short", "color": "#2196F3"},
+        {"key": "sma_long",  "label": "SMA Long",  "color": "#FF9800"},
+    ]
+
     def generate_signals(self) -> pd.DataFrame:
         short_window = int(self.params.get("short_window", 20))
         long_window = int(self.params.get("long_window", 50))
@@ -79,6 +84,12 @@ class BollingerBands(BaseStrategy):
     Goes Short (-1) when price rises above the upper band (overbought).
     """
 
+    INDICATOR_COLUMNS = [
+        {"key": "bb_middle",  "label": "BB Middle",     "color": "#9E9E9E"},
+        {"key": "upper_band", "label": "BB Upper Band", "color": "#f44336"},
+        {"key": "lower_band", "label": "BB Lower Band", "color": "#4CAF50"},
+    ]
+
     def generate_signals(self) -> pd.DataFrame:
         window = int(self.params.get("window", 20))
         num_std = float(self.params.get("num_std", 2.0))
@@ -86,10 +97,10 @@ class BollingerBands(BaseStrategy):
         df = self.data.copy()
 
         # Calculate Indicators
-        df["sma"] = df["close"].rolling(window=window).mean()
+        df["bb_middle"] = df["close"].rolling(window=window).mean()
         df["std"] = df["close"].rolling(window=window).std()
-        df["upper_band"] = df["sma"] + (df["std"] * num_std)
-        df["lower_band"] = df["sma"] - (df["std"] * num_std)
+        df["upper_band"] = df["bb_middle"] + (df["std"] * num_std)
+        df["lower_band"] = df["bb_middle"] - (df["std"] * num_std)
 
         # Initialize position column with NaNs
         df["position"] = np.nan
