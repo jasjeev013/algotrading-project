@@ -23,6 +23,21 @@ ENGINE_REGISTRY = {
     "vectorized": run_vectorized_backtest,
 }
 
+
+def _extract_indicator_data(strategy_instance, signal_df) -> dict:
+    result = {}
+    for col_spec in getattr(strategy_instance, "INDICATOR_COLUMNS", []):
+        col = col_spec["key"]
+        if col not in signal_df.columns:
+            continue
+        series = signal_df[["time", col]].dropna(subset=[col])
+        result[col] = {
+            "label": col_spec["label"],
+            "color": col_spec["color"],
+            "data": [{"time": str(r["time"]), "value": float(r[col])} for _, r in series.iterrows()],
+        }
+    return result
+
 app = FastAPI(title="QuantDash API")
 
 
@@ -172,6 +187,7 @@ def run_backtest(request: BacktestRequest, db: Session = Depends(get_db)):
             strategy_kwargs["pair_data"] = pair_raw_data
         strategy_instance = strategy_class(raw_data, **strategy_kwargs)
         signal_df = strategy_instance.generate_signals()
+        indicator_data = _extract_indicator_data(strategy_instance, signal_df)
 
         # 4. Run the Backtest Engine
         equity_curve, trade_log = run_engine(
@@ -253,7 +269,8 @@ def run_backtest(request: BacktestRequest, db: Session = Depends(get_db)):
             "metrics": metrics,
             "equity_curve": equity_curve,
             "trade_log": trade_log[::-1],  # Reverse list so newest trades are at top
-            "price_data": price_data,  # <--- NEW
+            "price_data": price_data,
+            "indicator_data": indicator_data,
             "feature_importance": feature_importance,
         }
 
@@ -459,6 +476,7 @@ def run_walk_forward(request: WalkForwardRequest, db: Session = Depends(get_db))
             "equity_curve": wfo_result["equity_curve"],
             "trade_log": wfo_result["trade_log"][::-1],
             "price_data": price_data,
+            "indicator_data": {},
             "feature_importance": wfo_result["feature_importance"],
             "walk_forward": {
                 "enabled": True,
