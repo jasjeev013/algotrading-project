@@ -1,15 +1,35 @@
 # Environment
 *.env
+.env.local
 .vscode/*
+!.vscode/extensions.json
 
-# Backend
+# Python / Backend
+**/__pycache__/
+**/*.py[cod]
+**/*.egg-info/
+.pytest_cache/
 backend/venv/
-backend/__pycache__/
 backend/logs/
+*.log
 
-# Frontend
-frontend/node_modules/
+# Databases
+*.db
+*.db-journal
+*.db.bak*
+*.sqlite
+*.sqlite3
+
+# Node / Frontend
+**/node_modules/
+frontend/dist/
+frontend/build/
+
+# OS / Editor
 .DS_Store
+Thumbs.db
+.idea/
 
+# Misc project scratch files
 scripts.txt
 comments.txt
