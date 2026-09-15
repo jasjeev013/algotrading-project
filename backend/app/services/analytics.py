@@ -35,12 +35,14 @@ def calculate_metrics(
     ]
     max_drawdown = equity_df["drawdown"].min()
 
-    # Win Rate
+    # Win Rate — undefined (not 0%) when there are no closed trades to grade,
+    # e.g. Buy & Hold or any strategy still holding a position when the
+    # backtest window ends.
     if len(trade_log) > 0:
         winning_trades = len([t for t in trade_log if t["profit_loss"] > 0])
         win_rate = winning_trades / len(trade_log)
     else:
-        win_rate = 0.0
+        win_rate = None
 
     # Sharpe Ratio (Simplified Daily)
     equity_df["daily_return"] = equity_df["equity"].pct_change()
@@ -59,7 +61,7 @@ def calculate_metrics(
         "total_return_pct": round(total_return * 100, 2),
         "cagr_pct": round(cagr * 100, 2),
         "max_drawdown_pct": round(max_drawdown * 100, 2),
-        "win_rate_pct": round(win_rate * 100, 2),
+        "win_rate_pct": round(win_rate * 100, 2) if win_rate is not None else None,
         "sharpe_ratio": round(sharpe_ratio, 2),
         "total_trades": len(trade_log),
     }

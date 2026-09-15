@@ -14,4 +14,4 @@ export const DEFAULT_PARAMS = {
 
 // Strategies with no model to fit — Walk-Forward needs an explicit
 // warmup window for these instead of relying on a trained model.
-export const NON_FITTING_STRATEGIES = ["SMA", "Bollinger"];
+export const NON_FITTING_STRATEGIES = ["BuyHold", "SMA", "Bollinger"];

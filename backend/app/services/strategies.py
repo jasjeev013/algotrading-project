@@ -41,6 +41,21 @@ class BaseStrategy(ABC):
         return result
 
 
+class BuyAndHold(BaseStrategy):
+    """
+    Baseline strategy. Goes Long (1) on the very first bar and holds
+    that position for the entire window — no exits, no parameters.
+    Useful as a reference line against which the other strategies are
+    measured.
+    """
+
+    def generate_signals(self) -> pd.DataFrame:
+        df = self.data.copy()
+        df["position"] = 1
+        df["signal"] = df["position"].diff().fillna(0)
+        return df
+
+
 class  SMACrossover(BaseStrategy):
     """
     Trend-following strategy.

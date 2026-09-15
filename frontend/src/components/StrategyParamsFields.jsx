@@ -1,6 +1,18 @@
 const StrategyParamsFields = ({ strategy, params, onChange }) => {
   const setParam = (key, value) => onChange({ ...params, [key]: value });
 
+  if (strategy === "BuyHold") {
+    return (
+      <div className="params-box">
+        <p className="params-hint">
+          No parameters — buys on the first bar and holds a long position
+          for the entire window. Useful as a baseline to compare the other
+          strategies against.
+        </p>
+      </div>
+    );
+  }
+
   if (strategy === "SMA") {
     return (
       <div className="params-box">

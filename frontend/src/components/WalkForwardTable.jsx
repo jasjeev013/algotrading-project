@@ -45,7 +45,11 @@ const WalkForwardTable = ({ walkForward }) => {
                 <td className="negative">
                   {w.metrics?.max_drawdown_pct?.toFixed(2)}%
                 </td>
-                <td>{w.metrics?.win_rate_pct?.toFixed(2)}%</td>
+                <td>
+                  {w.metrics?.win_rate_pct != null
+                    ? `${w.metrics.win_rate_pct.toFixed(2)}%`
+                    : "N/A"}
+                </td>
                 <td>{w.metrics?.total_trades}</td>
               </tr>
             ))}

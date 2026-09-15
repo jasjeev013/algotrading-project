@@ -719,12 +719,63 @@ button.kill-btn.active:disabled {
 }
 
 .metric-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--text-muted);
   margin-bottom: 8px;
   font-weight: 600;
+}
+
+.metric-info {
+  position: relative;
+  display: inline-flex;
+}
+
+.metric-info-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid var(--text-muted);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-style: italic;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: help;
+  user-select: none;
+}
+
+.metric-info-icon:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.metric-info-tooltip {
+  position: fixed;
+  transform: translate(-50%, calc(-100% - 8px));
+  width: 200px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  z-index: 1000;
+  pointer-events: none;
 }
 
 .metric-card .value {

@@ -85,6 +85,7 @@ const BacktestTopBar = ({
             value={strategy}
             onChange={(e) => setStrategy(e.target.value)}
           >
+            <option value="BuyHold">Buy &amp; Hold</option>
             <option value="SMA">SMA Crossover</option>
             <option value="Bollinger">Bollinger Bands</option>
             <option value="ML">Machine Learning (RF)</option>
@@ -120,13 +121,15 @@ const BacktestTopBar = ({
 
       <details className="backtest-topbar-params-row" open>
         <summary className="topbar-params-label">
-          {strategy === "SMA"
-            ? "SMA Crossover Settings"
-            : strategy === "Bollinger"
-              ? "Bollinger Bands Settings"
-              : strategy === "ML"
-                ? "Machine Learning Settings"
-                : "Pairs Trading Settings"}
+          {strategy === "BuyHold"
+            ? "Buy & Hold Settings"
+            : strategy === "SMA"
+              ? "SMA Crossover Settings"
+              : strategy === "Bollinger"
+                ? "Bollinger Bands Settings"
+                : strategy === "ML"
+                  ? "Machine Learning Settings"
+                  : "Pairs Trading Settings"}
         </summary>
 
         <div className="backtest-topbar-params-content">

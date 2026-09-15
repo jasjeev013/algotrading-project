@@ -1,6 +1,13 @@
-from app.services.strategies import SMACrossover, BollingerBands, MLRandomForest, StatArbitrageStrategy
+from app.services.strategies import (
+    BuyAndHold,
+    SMACrossover,
+    BollingerBands,
+    MLRandomForest,
+    StatArbitrageStrategy,
+)
 
 STRATEGY_REGISTRY = {
+    "BuyHold": BuyAndHold,
     "SMA": SMACrossover,
     "Bollinger": BollingerBands,
     "ML": MLRandomForest,

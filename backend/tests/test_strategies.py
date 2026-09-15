@@ -3,7 +3,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import numpy as np
 import pytest
-from app.services.strategies import SMACrossover, BollingerBands
+from app.services.strategies import BuyAndHold, SMACrossover, BollingerBands
 
 def _make_data(n=120):
     np.random.seed(42)
@@ -16,6 +16,13 @@ def _make_data(n=120):
             "low": float(close[i] - 0.2),  "close": float(close[i]), "volume": 1000.0,
         })
     return rows
+
+def test_buy_and_hold_stays_long():
+    df = BuyAndHold(_make_data()).generate_signals()
+    assert (df["position"] == 1).all()
+    # Never changes position after bar 0, so signal (position.diff()) is
+    # always 0 -- same as every other strategy's untradeable first row.
+    assert (df["signal"] == 0).all()
 
 def test_sma_has_indicator_columns():
     keys = [c["key"] for c in SMACrossover.INDICATOR_COLUMNS]
