@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from cost_model import apply_fill_costs_vectorized
+from app.services.cost_model import apply_fill_costs_vectorized
 
 
 def run_vectorized_backtest(

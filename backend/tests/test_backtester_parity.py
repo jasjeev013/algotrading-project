@@ -13,10 +13,10 @@ import pandas as pd
 
 from datetime import date, timedelta
 
-from data_fetcher import fetch_historical_data
-from strategies import SMACrossover, BollingerBands, MLRandomForest, StatArbitrageStrategy
-from backtester import run_iterative_backtest
-from vectorized_backtester import run_vectorized_backtest
+from app.services.data_fetcher import fetch_historical_data
+from app.services.strategies import SMACrossover, BollingerBands, MLRandomForest, StatArbitrageStrategy
+from app.services.backtester import run_iterative_backtest
+from app.services.vectorized_backtester import run_vectorized_backtest
 
 EQUITY_TOL = 0.02  # dollars, allows for independent rounding paths
 PCT_TOL = 0.02

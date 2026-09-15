@@ -2,11 +2,11 @@ from dotenv import load_dotenv
 import os
 from pathlib import Path
 
-# Local dev: .env lives at the project root, one level above backend/.
+# Local dev: .env lives at the project root, two levels above backend/app/.
 # In Docker, only backend/ is mounted into the container, so that path won't
 # exist there -- credentials instead arrive via docker-compose's env_file,
 # already present in os.environ by the time this module runs.
-env_path = Path(__file__).parent.parent / ".env"
+env_path = Path(__file__).parent.parent.parent / ".env"
 if env_path.exists():
     load_dotenv(env_path)
 

@@ -1,5 +1,6 @@
 # Environment
 *.env
+.vscode/*
 
 # Backend
 backend/venv/

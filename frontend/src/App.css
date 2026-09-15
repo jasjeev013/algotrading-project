@@ -955,3 +955,131 @@ tbody tr:last-child td {
   margin-bottom: 8px;
   opacity: 0.4;
 }
+
+/* =========================================================
+   Backtest Top Bar (Strategy Explorer)
+   In-content control bar replacing the left sidebar for this tab.
+   Two rows: instrument/model/run controls on top, and the selected
+   model's own parameters underneath so they read as "settings for
+   whichever strategy is picked above" rather than sitting mid-row.
+   ========================================================= */
+
+.backtest-topbar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  margin-bottom: 20px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.backtest-topbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px 16px;
+}
+
+.backtest-topbar .input-group {
+  margin-bottom: 0;
+}
+
+.backtest-topbar .topbar-field-sm {
+  width: 130px;
+}
+
+.backtest-topbar .topbar-field-md {
+  width: 170px;
+}
+
+.backtest-topbar .params-hint,
+.backtest-topbar .field-hint {
+  max-width: 260px;
+}
+
+button.run-btn.topbar-run-btn {
+  width: auto;
+  align-self: flex-end;
+  padding: 8px 18px;
+  margin-top: 0;
+  margin-left: auto;
+}
+
+.backtest-topbar-params-row {
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.topbar-params-label {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.topbar-params-label::-webkit-details-marker {
+  display: none;
+}
+
+.topbar-params-label::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 4px solid var(--text-muted);
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  transition: transform 0.15s var(--ease);
+}
+
+.backtest-topbar-params-row[open] .topbar-params-label::before {
+  transform: rotate(90deg);
+}
+
+.topbar-params-label:hover {
+  color: var(--text-primary);
+}
+
+.backtest-topbar-params-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 16px;
+  margin-top: 12px;
+}
+
+/* Strip the boxed-in card look here — the divider above the row already
+   separates it from the instrument controls, so the fields can just flow
+   left to right like the row above, at the same spacing. */
+.backtest-topbar-params-row .params-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px 16px;
+  margin-bottom: 0;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* Flatten StrategyParamsFields' internal row grouping so every input sits
+   as a direct sibling in the flex row above, instead of stacking in pairs. */
+.backtest-topbar-params-row .params-box .input-row {
+  display: contents;
+}
+
+.backtest-topbar-params-row .input-group {
+  width: 130px;
+  margin-bottom: 0;
+}
+
+.backtest-topbar-params-row .params-hint {
+  flex: 1 0 100%;
+}

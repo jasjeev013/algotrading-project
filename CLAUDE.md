@@ -55,7 +55,7 @@ Frontend (React) → POST /api/backtest → FastAPI
 **Backend** (from `backend/` dir):
 ```bash
 source venv/bin/activate
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 # Runs on http://localhost:8000
 ```
 

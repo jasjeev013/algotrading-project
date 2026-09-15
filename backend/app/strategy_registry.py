@@ -1,4 +1,4 @@
-from strategies import SMACrossover, BollingerBands, MLRandomForest, StatArbitrageStrategy
+from app.services.strategies import SMACrossover, BollingerBands, MLRandomForest, StatArbitrageStrategy
 
 STRATEGY_REGISTRY = {
     "SMA": SMACrossover,

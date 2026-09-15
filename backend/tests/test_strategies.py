@@ -3,7 +3,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import numpy as np
 import pytest
-from strategies import SMACrossover, BollingerBands
+from app.services.strategies import SMACrossover, BollingerBands
 
 def _make_data(n=120):
     np.random.seed(42)

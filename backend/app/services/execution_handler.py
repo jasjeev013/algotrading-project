@@ -3,7 +3,7 @@ from oandapyV20 import API
 from oandapyV20.endpoints import instruments, accounts, orders, positions
 from oandapyV20.exceptions import V20Error
 
-from config import OANDA_ACCOUNT_ID, OANDA_API_KEY, OANDA_ENVIRONMENT, MAX_ORDER_UNITS
+from app.config import OANDA_ACCOUNT_ID, OANDA_API_KEY, OANDA_ENVIRONMENT, MAX_ORDER_UNITS
 
 
 class OandaExecutionHandler:

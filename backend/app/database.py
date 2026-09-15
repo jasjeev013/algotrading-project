@@ -20,7 +20,7 @@ def get_db():
 
 
 def init_db():
-    import models  # noqa: F401  (ensure models are registered before create_all)
+    import app.models  # noqa: F401  (ensure models are registered before create_all)
 
     Base.metadata.create_all(bind=engine)
     _run_lightweight_migrations()

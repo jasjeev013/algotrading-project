@@ -1,6 +1,6 @@
 import pandas as pd
 
-from cost_model import apply_fill_costs as _apply_fill_costs
+from app.services.cost_model import apply_fill_costs as _apply_fill_costs
 
 
 def run_iterative_backtest(

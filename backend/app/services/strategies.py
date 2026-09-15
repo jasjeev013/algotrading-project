@@ -41,7 +41,7 @@ class BaseStrategy(ABC):
         return result
 
 
-class SMACrossover(BaseStrategy):
+class  SMACrossover(BaseStrategy):
     """
     Trend-following strategy.
     Goes Long (1) when Fast SMA > Slow SMA.
