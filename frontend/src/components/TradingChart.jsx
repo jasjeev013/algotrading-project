@@ -1,12 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  createChart, CrosshairMode, CandlestickSeries, LineSeries, createSeriesMarkers,
+  createChart, CrosshairMode, CandlestickSeries, LineSeries, BarSeries, AreaSeries, LineType,
+  createSeriesMarkers,
 } from "lightweight-charts";
+
+const CHART_TYPES = [
+  { value: "candlestick", label: "Candles" },
+  { value: "bar", label: "Bars" },
+  { value: "line", label: "Line" },
+  { value: "area", label: "Smooth" },
+];
 
 const TradingChart = ({ priceData, tradeLog, indicatorData = {} }) => {
   const chartContainerRef = useRef();
   const lineSeriesRefs = useRef({});
+  const markersRef = useRef(null);
+  const markersDataRef = useRef([]);
   const [visible, setVisible] = useState({});
+  const [chartType, setChartType] = useState("candlestick");
+  const [showMarkers, setShowMarkers] = useState(true);
 
   // Reset visibility when indicator set changes (new strategy selected)
   useEffect(() => {
@@ -30,11 +42,30 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }) => {
     });
     lineSeriesRefs.current = {};
 
-    const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: "#4CAF50", downColor: "#f44336",
-      borderVisible: false, wickUpColor: "#4CAF50", wickDownColor: "#f44336",
-    });
-    candleSeries.setData(priceData);
+    let priceSeries;
+    if (chartType === "bar") {
+      priceSeries = chart.addSeries(BarSeries, {
+        upColor: "#4CAF50", downColor: "#f44336",
+      });
+      priceSeries.setData(priceData);
+    } else if (chartType === "line" || chartType === "area") {
+      const closeData = priceData.map((d) => ({ time: d.time, value: d.close }));
+      if (chartType === "area") {
+        priceSeries = chart.addSeries(AreaSeries, {
+          lineColor: "#4CAF50", topColor: "rgba(76, 175, 80, 0.4)", bottomColor: "rgba(76, 175, 80, 0.02)",
+          lineWidth: 2, lineType: LineType.Curved,
+        });
+      } else {
+        priceSeries = chart.addSeries(LineSeries, { color: "#4CAF50", lineWidth: 2 });
+      }
+      priceSeries.setData(closeData);
+    } else {
+      priceSeries = chart.addSeries(CandlestickSeries, {
+        upColor: "#4CAF50", downColor: "#f44336",
+        borderVisible: false, wickUpColor: "#4CAF50", wickDownColor: "#f44336",
+      });
+      priceSeries.setData(priceData);
+    }
 
     for (const [key, spec] of Object.entries(indicatorData)) {
       const ls = chart.addSeries(LineSeries, {
@@ -54,12 +85,20 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }) => {
         color: "#FF9800", shape: trade.type === "LONG" ? "arrowDown" : "arrowUp", text: "Exit" });
     });
     markers.sort((a, b) => new Date(a.time) - new Date(b.time));
-    createSeriesMarkers(candleSeries, markers);
+    markersDataRef.current = markers;
+    markersRef.current = createSeriesMarkers(priceSeries, showMarkers ? markers : []);
 
     const handleResize = () => chart.applyOptions({ width: chartContainerRef.current.clientWidth });
     window.addEventListener("resize", handleResize);
     return () => { window.removeEventListener("resize", handleResize); chart.remove(); };
-  }, [priceData, tradeLog, indicatorData]);
+  }, [priceData, tradeLog, indicatorData, chartType]);
+
+  // Toggle entry/exit arrows without rebuilding the chart
+  useEffect(() => {
+    if (markersRef.current) {
+      markersRef.current.setMarkers(showMarkers ? markersDataRef.current : []);
+    }
+  }, [showMarkers]);
 
   // Toggle visibility without rebuilding the chart
   useEffect(() => {
@@ -70,18 +109,28 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }) => {
 
   return (
     <div>
-      {Object.keys(indicatorData).length > 0 && (
-        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "8px" }}>
-          {Object.entries(indicatorData).map(([key, spec]) => (
-            <label key={key} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "#92a0b8" }}>
-              <input type="checkbox" checked={visible[key] !== false}
-                onChange={(e) => setVisible((p) => ({ ...p, [key]: e.target.checked }))} />
-              <span style={{ display: "inline-block", width: 12, height: 2, background: spec.color, verticalAlign: "middle" }} />
-              {spec.label}
-            </label>
-          ))}
-        </div>
-      )}
+      <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap", marginBottom: "8px" }}>
+        {Object.entries(indicatorData).map(([key, spec]) => (
+          <label key={key} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "#92a0b8" }}>
+            <input type="checkbox" checked={visible[key] !== false}
+              onChange={(e) => setVisible((p) => ({ ...p, [key]: e.target.checked }))} />
+            <span style={{ display: "inline-block", width: 12, height: 2, background: spec.color, verticalAlign: "middle" }} />
+            {spec.label}
+          </label>
+        ))}
+        <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "#92a0b8" }}>
+          <input type="checkbox" checked={showMarkers}
+            onChange={(e) => setShowMarkers(e.target.checked)} />
+          Entry/Exit arrows
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#92a0b8", marginLeft: "auto" }}>
+          Chart type
+          <select value={chartType} onChange={(e) => setChartType(e.target.value)}
+            style={{ background: "#131722", color: "#92a0b8", border: "1px solid #232a38", borderRadius: "4px", padding: "2px 6px", fontSize: "12px" }}>
+            {CHART_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+        </label>
+      </div>
       <div ref={chartContainerRef} style={{ position: "relative", width: "100%", border: "1px solid #1b212c", borderRadius: "10px", overflow: "hidden" }} />
     </div>
   );

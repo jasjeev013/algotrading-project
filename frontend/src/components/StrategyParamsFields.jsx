@@ -68,6 +68,162 @@ const StrategyParamsFields = ({ strategy, params, onChange }) => {
     );
   }
 
+  if (strategy === "EMA") {
+    return (
+      <div className="params-box">
+        <div className="input-row">
+          <div className="input-group" style={{ marginBottom: 0 }}>
+            <label>Short EMA</label>
+            <input
+              type="number"
+              min="1"
+              value={params.ema_short}
+              onChange={(e) => setParam("ema_short", e.target.value)}
+            />
+          </div>
+          <div className="input-group" style={{ marginBottom: 0 }}>
+            <label>Long EMA</label>
+            <input
+              type="number"
+              min="1"
+              value={params.ema_long}
+              onChange={(e) => setParam("ema_long", e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (strategy === "MACD") {
+    return (
+      <div className="params-box">
+        <div className="input-row">
+          <div className="input-group" style={{ marginBottom: 0 }}>
+            <label>Fast Period</label>
+            <input
+              type="number"
+              min="1"
+              value={params.macd_fast}
+              onChange={(e) => setParam("macd_fast", e.target.value)}
+            />
+          </div>
+          <div className="input-group" style={{ marginBottom: 0 }}>
+            <label>Slow Period</label>
+            <input
+              type="number"
+              min="1"
+              value={params.macd_slow}
+              onChange={(e) => setParam("macd_slow", e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="input-group">
+          <label>Signal Period</label>
+          <input
+            type="number"
+            min="1"
+            value={params.macd_signal_period}
+            onChange={(e) => setParam("macd_signal_period", e.target.value)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (strategy === "RSI") {
+    return (
+      <div className="params-box">
+        <div className="input-group">
+          <label>RSI Period</label>
+          <input
+            type="number"
+            min="2"
+            value={params.rsi_period}
+            onChange={(e) => setParam("rsi_period", e.target.value)}
+          />
+        </div>
+        <div className="input-row">
+          <div className="input-group" style={{ marginBottom: 0 }}>
+            <label>Oversold</label>
+            <input
+              type="number"
+              min="1"
+              max="49"
+              value={params.rsi_oversold}
+              onChange={(e) => setParam("rsi_oversold", e.target.value)}
+            />
+          </div>
+          <div className="input-group" style={{ marginBottom: 0 }}>
+            <label>Overbought</label>
+            <input
+              type="number"
+              min="51"
+              max="99"
+              value={params.rsi_overbought}
+              onChange={(e) => setParam("rsi_overbought", e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (strategy === "Contrarian") {
+    return (
+      <div className="params-box">
+        <div className="input-row">
+          <div className="input-group" style={{ marginBottom: 0 }}>
+            <label>Lookback (days)</label>
+            <input
+              type="number"
+              min="1"
+              value={params.contrarian_lookback}
+              onChange={(e) => setParam("contrarian_lookback", e.target.value)}
+            />
+          </div>
+          <div className="input-group" style={{ marginBottom: 0 }}>
+            <label>Threshold (%)</label>
+            <input
+              type="number"
+              step="0.5"
+              min="0"
+              value={(params.contrarian_threshold * 100).toFixed(1)}
+              onChange={(e) =>
+                setParam("contrarian_threshold", parseFloat(e.target.value) / 100)
+              }
+            />
+          </div>
+        </div>
+        <p className="params-hint">
+          Buys when the {params.contrarian_lookback}-day return drops below
+          −{(params.contrarian_threshold * 100).toFixed(1)}%, shorts when it
+          rises above +{(params.contrarian_threshold * 100).toFixed(1)}%.
+        </p>
+      </div>
+    );
+  }
+
+  if (strategy === "NDayMom") {
+    return (
+      <div className="params-box">
+        <div className="input-group" style={{ marginBottom: 0 }}>
+          <label>Lookback (days)</label>
+          <input
+            type="number"
+            min="1"
+            value={params.nday_lookback}
+            onChange={(e) => setParam("nday_lookback", e.target.value)}
+          />
+          <p className="params-hint">
+            Long if today's price is above the price{" "}
+            {params.nday_lookback} days ago, Short otherwise.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (strategy === "ML") {
     return (
       <div className="params-box">

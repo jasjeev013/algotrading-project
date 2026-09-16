@@ -37,6 +37,37 @@ export function useStrategyConfig() {
         num_std: parseFloat(strategyParams.num_std),
       };
     }
+    if (strategy === "EMA") {
+      return {
+        ema_short: parseInt(strategyParams.ema_short, 10),
+        ema_long: parseInt(strategyParams.ema_long, 10),
+      };
+    }
+    if (strategy === "MACD") {
+      return {
+        macd_fast: parseInt(strategyParams.macd_fast, 10),
+        macd_slow: parseInt(strategyParams.macd_slow, 10),
+        macd_signal_period: parseInt(strategyParams.macd_signal_period, 10),
+      };
+    }
+    if (strategy === "RSI") {
+      return {
+        rsi_period: parseInt(strategyParams.rsi_period, 10),
+        rsi_oversold: parseFloat(strategyParams.rsi_oversold),
+        rsi_overbought: parseFloat(strategyParams.rsi_overbought),
+      };
+    }
+    if (strategy === "Contrarian") {
+      return {
+        contrarian_lookback: parseInt(strategyParams.contrarian_lookback, 10),
+        contrarian_threshold: parseFloat(strategyParams.contrarian_threshold),
+      };
+    }
+    if (strategy === "NDayMom") {
+      return {
+        nday_lookback: parseInt(strategyParams.nday_lookback, 10),
+      };
+    }
     if (strategy === "ML") {
       return {
         train_split: parseFloat(strategyParams.train_split),

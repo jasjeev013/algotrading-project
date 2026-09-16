@@ -10,8 +10,28 @@ export const DEFAULT_PARAMS = {
   entry_z: 2.0,
   exit_z: 0.5,
   coint_pvalue_threshold: 0.05,
+  ema_short: 12,
+  ema_long: 26,
+  macd_fast: 12,
+  macd_slow: 26,
+  macd_signal_period: 9,
+  rsi_period: 14,
+  rsi_oversold: 30,
+  rsi_overbought: 70,
+  contrarian_lookback: 5,
+  contrarian_threshold: 0.03,
+  nday_lookback: 20,
 };
 
 // Strategies with no model to fit — Walk-Forward needs an explicit
 // warmup window for these instead of relying on a trained model.
-export const NON_FITTING_STRATEGIES = ["BuyHold", "SMA", "Bollinger"];
+export const NON_FITTING_STRATEGIES = [
+  "BuyHold",
+  "SMA",
+  "Bollinger",
+  "EMA",
+  "MACD",
+  "RSI",
+  "Contrarian",
+  "NDayMom",
+];

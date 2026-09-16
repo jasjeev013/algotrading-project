@@ -4,12 +4,22 @@ from app.services.strategies import (
     BollingerBands,
     MLRandomForest,
     StatArbitrageStrategy,
+    EMACrossover,
+    MACDStrategy,
+    RSIMeanReversion,
+    ContrarianStrategy,
+    NDayMomentum,
 )
 
 STRATEGY_REGISTRY = {
     "BuyHold": BuyAndHold,
     "SMA": SMACrossover,
+    "EMA": EMACrossover,
+    "MACD": MACDStrategy,
     "Bollinger": BollingerBands,
+    "RSI": RSIMeanReversion,
+    "Contrarian": ContrarianStrategy,
+    "NDayMom": NDayMomentum,
     "ML": MLRandomForest,
     "StatArb": StatArbitrageStrategy,
 }

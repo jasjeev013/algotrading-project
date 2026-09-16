@@ -1,6 +1,8 @@
 const TradeLogTable = ({ tradeLog }) => (
-  <div className="section-block">
-    <h2>Trade Log</h2>
+  <details className="section-block">
+    <summary style={{ cursor: "pointer" }}>
+      <h2 style={{ display: "inline" }}>Trade Log</h2>
+    </summary>
     <div className="table-container">
       <table>
         <thead>
@@ -49,7 +51,7 @@ const TradeLogTable = ({ tradeLog }) => (
         </tbody>
       </table>
     </div>
-  </div>
+  </details>
 );
 
 export default TradeLogTable;

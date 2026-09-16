@@ -87,7 +87,12 @@ const BacktestTopBar = ({
           >
             <option value="BuyHold">Buy &amp; Hold</option>
             <option value="SMA">SMA Crossover</option>
+            <option value="EMA">EMA Crossover</option>
+            <option value="MACD">MACD</option>
             <option value="Bollinger">Bollinger Bands</option>
+            <option value="RSI">RSI Mean Reversion</option>
+            <option value="Contrarian">Contrarian</option>
+            <option value="NDayMom">Momentum (N-Day)</option>
             <option value="ML">Machine Learning (RF)</option>
             <option value="StatArb">Pairs Trading (StatArb)</option>
           </select>

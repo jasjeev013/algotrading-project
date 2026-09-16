@@ -132,6 +132,150 @@ class BollingerBands(BaseStrategy):
         return df
 
 
+class EMACrossover(BaseStrategy):
+    """
+    Trend-following strategy, same shape as SMACrossover but with
+    exponentially-weighted moving averages (more weight on recent bars).
+    Long when fast EMA > slow EMA, Short otherwise.
+    """
+
+    INDICATOR_COLUMNS = [
+        {"key": "ema_short", "label": "EMA Short", "color": "#00BCD4"},
+        {"key": "ema_long",  "label": "EMA Long",  "color": "#9C27B0"},
+    ]
+
+    def generate_signals(self) -> pd.DataFrame:
+        ema_short = int(self.params.get("ema_short", 12))
+        ema_long = int(self.params.get("ema_long", 26))
+
+        df = self.data.copy()
+        df["ema_short"] = df["close"].ewm(span=ema_short, adjust=False).mean()
+        df["ema_long"] = df["close"].ewm(span=ema_long, adjust=False).mean()
+
+        df["position"] = np.where(df["ema_short"] > df["ema_long"], 1, -1)
+        df.iloc[:ema_long, df.columns.get_loc("position")] = 0
+        df["signal"] = df["position"].diff().fillna(0)
+
+        return df
+
+
+class MACDStrategy(BaseStrategy):
+    """
+    Trend-following strategy built on the MACD line (fast EMA - slow EMA)
+    crossing its own signal line (an EMA of the MACD line itself).
+    Long when MACD line > signal line, Short otherwise. No price-scale
+    overlay -- MACD lives on its own scale, not the price chart.
+    """
+
+    INDICATOR_COLUMNS = []
+
+    def generate_signals(self) -> pd.DataFrame:
+        fast = int(self.params.get("macd_fast", 12))
+        slow = int(self.params.get("macd_slow", 26))
+        signal_period = int(self.params.get("macd_signal_period", 9))
+
+        df = self.data.copy()
+        ema_fast = df["close"].ewm(span=fast, adjust=False).mean()
+        ema_slow = df["close"].ewm(span=slow, adjust=False).mean()
+        df["macd_line"] = ema_fast - ema_slow
+        df["macd_signal_line"] = df["macd_line"].ewm(span=signal_period, adjust=False).mean()
+
+        df["position"] = np.where(df["macd_line"] > df["macd_signal_line"], 1, -1)
+        df.iloc[:slow, df.columns.get_loc("position")] = 0
+        df["signal"] = df["position"].diff().fillna(0)
+
+        return df
+
+
+def _compute_rsi(close: pd.Series, period: int = 14) -> pd.Series:
+    delta = close.diff()
+    avg_gain = delta.clip(lower=0).ewm(alpha=1 / period, min_periods=period, adjust=False).mean()
+    avg_loss = (-delta.clip(upper=0)).ewm(alpha=1 / period, min_periods=period, adjust=False).mean()
+    rs = avg_gain / avg_loss
+    return 100 - (100 / (1 + rs))
+
+
+class RSIMeanReversion(BaseStrategy):
+    """
+    Mean-reversion strategy on the Relative Strength Index.
+    Goes Long (1) when RSI drops below the oversold threshold, Short (-1)
+    when RSI rises above the overbought threshold, and holds that position
+    until the opposite threshold fires.
+    """
+
+    INDICATOR_COLUMNS = []
+
+    def generate_signals(self) -> pd.DataFrame:
+        period = int(self.params.get("rsi_period", 14))
+        oversold = float(self.params.get("rsi_oversold", 30))
+        overbought = float(self.params.get("rsi_overbought", 70))
+
+        df = self.data.copy()
+        df["rsi"] = _compute_rsi(df["close"], period)
+
+        df["position"] = np.nan
+        df.loc[df["rsi"] < oversold, "position"] = 1
+        df.loc[df["rsi"] > overbought, "position"] = -1
+        df["position"] = df["position"].ffill().fillna(0)
+        df.iloc[:period, df.columns.get_loc("position")] = 0
+
+        df["signal"] = df["position"].diff().fillna(0)
+
+        return df
+
+
+class ContrarianStrategy(BaseStrategy):
+    """
+    Contrarian strategy: bets against short-term price extremes.
+    Buys after a recent drop exceeding contrarian_threshold (expecting a
+    bounce), shorts after a recent rally exceeding it (expecting a pullback),
+    and holds until the opposite extreme fires.
+    """
+
+    INDICATOR_COLUMNS = []
+
+    def generate_signals(self) -> pd.DataFrame:
+        lookback = int(self.params.get("contrarian_lookback", 5))
+        threshold = float(self.params.get("contrarian_threshold", 0.03))
+
+        df = self.data.copy()
+        df["ret_n"] = df["close"].pct_change(periods=lookback)
+
+        df["position"] = np.nan
+        df.loc[df["ret_n"] < -threshold, "position"] = 1
+        df.loc[df["ret_n"] > threshold, "position"] = -1
+        df["position"] = df["position"].ffill().fillna(0)
+        df.iloc[:lookback, df.columns.get_loc("position")] = 0
+
+        df["signal"] = df["position"].diff().fillna(0)
+
+        return df
+
+
+class NDayMomentum(BaseStrategy):
+    """
+    Simple momentum strategy: Long when today's close is above the close
+    from nday_lookback bars ago (price has been rising), Short when it's
+    below (price has been falling). No smoothing/threshold -- the plainest
+    possible "trend continues" bet.
+    """
+
+    INDICATOR_COLUMNS = []
+
+    def generate_signals(self) -> pd.DataFrame:
+        lookback = int(self.params.get("nday_lookback", 20))
+
+        df = self.data.copy()
+        df["position"] = np.where(
+            df["close"] > df["close"].shift(lookback), 1, -1
+        ).astype(float)
+        df.iloc[:lookback, df.columns.get_loc("position")] = 0
+
+        df["signal"] = df["position"].diff().fillna(0)
+
+        return df
+
+
 ML_FEATURES = [
     "returns",
     "mom_3d",
