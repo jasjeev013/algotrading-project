@@ -1,3 +1,4 @@
+import WalkForwardTopBar from "../components/WalkForwardTopBar";
 import TradingChart from "../components/TradingChart";
 import EquityCurveChart from "../components/EquityCurveChart";
 import FeatureImportancePanel from "../components/FeatureImportancePanel";
@@ -5,13 +6,42 @@ import MetricsGrid from "../components/MetricsGrid";
 import TradeLogTable from "../components/TradeLogTable";
 import WalkForwardTable from "../components/WalkForwardTable";
 
-// Walk-Forward tab results — the sidebar controls still live in App.jsx
-// (WalkForwardSidebar), this is just the results pane.
-const WalkForwardPage = ({ walkForward }) => {
-  const { loading, error, results } = walkForward;
+// Walk-Forward tab: the in-content top bar plus the stitched-run results
+// (metrics, price/equity charts, per-window table, trade log).
+const WalkForwardPage = ({ config, walkForward }) => {
+  const { loading, error, results, runWalkForward } = walkForward;
 
   return (
     <>
+      <WalkForwardTopBar
+        ticker={config.ticker}
+        setTicker={config.setTicker}
+        startDate={config.startDate}
+        setStartDate={config.setStartDate}
+        endDate={config.endDate}
+        setEndDate={config.setEndDate}
+        strategy={config.strategy}
+        setStrategy={config.setStrategy}
+        capital={config.capital}
+        setCapital={config.setCapital}
+        dataInterval={config.dataInterval}
+        setDataInterval={config.setDataInterval}
+        strategyParams={config.strategyParams}
+        setStrategyParams={config.setStrategyParams}
+        pairTicker={config.pairTicker}
+        setPairTicker={config.setPairTicker}
+        trainMonths={walkForward.trainMonths}
+        setTrainMonths={walkForward.setTrainMonths}
+        tradeMonths={walkForward.tradeMonths}
+        setTradeMonths={walkForward.setTradeMonths}
+        stepMonths={walkForward.stepMonths}
+        setStepMonths={walkForward.setStepMonths}
+        warmupBars={walkForward.warmupBars}
+        setWarmupBars={walkForward.setWarmupBars}
+        loading={loading}
+        onRun={runWalkForward}
+      />
+
       <h1>Walk-Forward Results</h1>
       <p className="subtitle">
         Rolling train/trade window validation — works for any strategy,
@@ -77,8 +107,8 @@ const WalkForwardPage = ({ walkForward }) => {
       {!results && !loading && !error && (
         <div className="empty-state">
           <div className="empty-icon">🔁</div>
-          Configure your parameters on the left and click "Run Walk-Forward"
-          to begin.
+          Configure your parameters above and click "Run Walk-Forward" to
+          begin.
         </div>
       )}
     </>

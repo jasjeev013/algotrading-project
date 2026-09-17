@@ -63,10 +63,20 @@ def test_macd_signals():
     assert "macd_line" in df.columns and "macd_signal_line" in df.columns
     assert set(df["position"].dropna().unique()).issubset({-1, 0, 1})
 
+def test_macd_indicator_columns_are_oscillator_scale():
+    keys = [c["key"] for c in MACDStrategy.INDICATOR_COLUMNS]
+    assert "macd_line" in keys and "macd_signal_line" in keys
+    assert all(c["scale"] == "oscillator" for c in MACDStrategy.INDICATOR_COLUMNS)
+
 def test_rsi_signals():
     df = RSIMeanReversion(_make_data(120), rsi_period=14, rsi_oversold=30, rsi_overbought=70).generate_signals()
     assert "rsi" in df.columns
     assert set(df["position"].dropna().unique()).issubset({-1, 0, 1})
+
+def test_rsi_indicator_columns_are_oscillator_scale():
+    keys = [c["key"] for c in RSIMeanReversion.INDICATOR_COLUMNS]
+    assert "rsi" in keys
+    assert all(c["scale"] == "oscillator" for c in RSIMeanReversion.INDICATOR_COLUMNS)
 
 def test_contrarian_signals():
     df = ContrarianStrategy(_make_data(120), contrarian_lookback=5, contrarian_threshold=0.03).generate_signals()

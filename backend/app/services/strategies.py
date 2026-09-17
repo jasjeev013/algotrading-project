@@ -163,11 +163,16 @@ class MACDStrategy(BaseStrategy):
     """
     Trend-following strategy built on the MACD line (fast EMA - slow EMA)
     crossing its own signal line (an EMA of the MACD line itself).
-    Long when MACD line > signal line, Short otherwise. No price-scale
-    overlay -- MACD lives on its own scale, not the price chart.
+    Long when MACD line > signal line, Short otherwise. MACD's values
+    aren't on the price scale, so these are flagged "oscillator" -- the
+    frontend gives them their own auto-scaling strip instead of squashing
+    them flat against the price axis.
     """
 
-    INDICATOR_COLUMNS = []
+    INDICATOR_COLUMNS = [
+        {"key": "macd_line", "label": "MACD Line", "color": "#2196F3", "scale": "oscillator"},
+        {"key": "macd_signal_line", "label": "MACD Signal", "color": "#FF9800", "scale": "oscillator"},
+    ]
 
     def generate_signals(self) -> pd.DataFrame:
         fast = int(self.params.get("macd_fast", 12))
@@ -203,7 +208,9 @@ class RSIMeanReversion(BaseStrategy):
     until the opposite threshold fires.
     """
 
-    INDICATOR_COLUMNS = []
+    INDICATOR_COLUMNS = [
+        {"key": "rsi", "label": "RSI", "color": "#9C27B0", "scale": "oscillator"},
+    ]
 
     def generate_signals(self) -> pd.DataFrame:
         period = int(self.params.get("rsi_period", 14))

@@ -68,10 +68,24 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }) => {
     }
 
     for (const [key, spec] of Object.entries(indicatorData)) {
-      const ls = chart.addSeries(LineSeries, {
+      // "oscillator" indicators (MACD, RSI, ...) aren't on the price scale --
+      // give them their own auto-scaling axis squeezed into a strip at the
+      // bottom of the same chart, instead of sharing the price scale where
+      // they'd render as a flat line pinned near zero.
+      const isOscillator = spec.scale === "oscillator";
+      const seriesOptions = {
         color: spec.color, lineWidth: 1.5,
         priceLineVisible: false, lastValueVisible: false,
-      });
+      };
+      if (isOscillator) seriesOptions.priceScaleId = "oscillator-scale";
+
+      const ls = chart.addSeries(LineSeries, seriesOptions);
+      if (isOscillator) {
+        ls.priceScale().applyOptions({
+          scaleMargins: { top: 0.75, bottom: 0.02 },
+          visible: false,
+        });
+      }
       ls.setData(spec.data);
       lineSeriesRefs.current[key] = { series: ls, data: spec.data };
     }

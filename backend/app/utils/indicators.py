@@ -13,6 +13,12 @@ def extract_indicator_data(strategy_instance, signal_df) -> dict:
         result[col] = {
             "label": col_spec["label"],
             "color": col_spec["color"],
+            # "price" (default): shares the main price scale, like SMA/Bollinger
+            # overlays. "oscillator": values aren't on the price scale (MACD's
+            # small deltas, RSI's 0-100 range) -- the frontend gives these
+            # their own auto-scaling axis squeezed into a strip of the same
+            # chart instead of flattening them against the price scale.
+            "scale": col_spec.get("scale", "price"),
             "data": [
                 {"time": str(r["time"]), "value": float(r[col])}
                 for _, r in series.iterrows()

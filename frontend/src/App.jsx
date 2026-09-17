@@ -2,7 +2,6 @@ import { useState } from "react";
 import TopBar from "./components/TopBar";
 import RegimeHeader from "./components/RegimeHeader";
 import NavRail from "./components/NavRail";
-import WalkForwardSidebar from "./components/WalkForwardSidebar";
 import LiveSidebar from "./components/LiveSidebar";
 import AdvancedSettingsSidebar from "./components/AdvancedSettingsSidebar";
 import HistorySidebar from "./components/HistorySidebar";
@@ -51,39 +50,10 @@ function App() {
       <div className="dashboard-container">
         <NavRail mode={mode} onSelect={handleModeChange} />
 
-        {/* SIDEBAR (Strategy Explorer uses an in-content top bar instead — see BacktestPage) */}
-        {mode !== "backtest" && (
+        {/* SIDEBAR (Strategy Explorer and Walk-Forward use an in-content top bar instead — see BacktestPage / WalkForwardPage) */}
+        {mode !== "backtest" && mode !== "walkforward" && (
           <div className="sidebar">
-            {mode === "walkforward" ? (
-              <WalkForwardSidebar
-                ticker={config.ticker}
-                setTicker={config.setTicker}
-                startDate={config.startDate}
-                setStartDate={config.setStartDate}
-                endDate={config.endDate}
-                setEndDate={config.setEndDate}
-                strategy={config.strategy}
-                setStrategy={config.setStrategy}
-                capital={config.capital}
-                setCapital={config.setCapital}
-                dataInterval={config.dataInterval}
-                setDataInterval={config.setDataInterval}
-                strategyParams={config.strategyParams}
-                setStrategyParams={config.setStrategyParams}
-                pairTicker={config.pairTicker}
-                setPairTicker={config.setPairTicker}
-                trainMonths={walkForward.trainMonths}
-                setTrainMonths={walkForward.setTrainMonths}
-                tradeMonths={walkForward.tradeMonths}
-                setTradeMonths={walkForward.setTradeMonths}
-                stepMonths={walkForward.stepMonths}
-                setStepMonths={walkForward.setStepMonths}
-                warmupBars={walkForward.warmupBars}
-                setWarmupBars={walkForward.setWarmupBars}
-                loading={walkForward.loading}
-                onRun={walkForward.runWalkForward}
-              />
-            ) : mode === "live" ? (
+            {mode === "live" ? (
               <LiveSidebar
                 strategy={live.strategy}
                 setStrategy={live.setStrategy}
@@ -117,7 +87,7 @@ function App() {
           {mode === "backtest" ? (
             <BacktestPage config={config} backtest={backtest} />
           ) : mode === "walkforward" ? (
-            <WalkForwardPage walkForward={walkForward} />
+            <WalkForwardPage config={config} walkForward={walkForward} />
           ) : mode === "live" ? (
             <LivePage live={live} />
           ) : mode === "settings" ? (
