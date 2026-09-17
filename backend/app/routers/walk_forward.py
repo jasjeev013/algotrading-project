@@ -57,6 +57,7 @@ def run_walk_forward(request: WalkForwardRequest, db: Session = Depends(get_db))
             train_months=request.train_months,
             trade_months=request.trade_months,
             step_months=request.step_months,
+            window_unit=request.window_unit,
             initial_capital=request.initial_capital,
             commission_pct=request.commission_pct,
             spread_pct=request.spread_pct,
@@ -102,6 +103,7 @@ def run_walk_forward(request: WalkForwardRequest, db: Session = Depends(get_db))
             train_months=request.train_months,
             trade_months=request.trade_months,
             step_months=step_months_resolved,
+            window_unit=request.window_unit,
             strategy_params=persisted_strategy_params,
             metrics=metrics,
             window_metrics=wfo_result["window_metrics"],
@@ -118,13 +120,14 @@ def run_walk_forward(request: WalkForwardRequest, db: Session = Depends(get_db))
             "equity_curve": wfo_result["equity_curve"],
             "trade_log": wfo_result["trade_log"][::-1],
             "price_data": price_data,
-            "indicator_data": {},
+            "indicator_data": wfo_result["indicator_data"],
             "feature_importance": wfo_result["feature_importance"],
             "walk_forward": {
                 "enabled": True,
                 "train_months": request.train_months,
                 "trade_months": request.trade_months,
                 "step_months": step_months_resolved,
+                "window_unit": request.window_unit,
                 "window_metrics": wfo_result["window_metrics"],
             },
         }
@@ -158,6 +161,7 @@ def list_walk_forward_runs(db: Session = Depends(get_db)):
                 "train_months": run.train_months,
                 "trade_months": run.trade_months,
                 "step_months": run.step_months,
+                "window_unit": run.window_unit,
                 "created_at": run.created_at.isoformat() if run.created_at else None,
                 "metrics": run.metrics,
             }
@@ -194,6 +198,7 @@ def get_walk_forward_run(run_id: int, db: Session = Depends(get_db)):
         "train_months": run.train_months,
         "trade_months": run.trade_months,
         "step_months": run.step_months,
+        "window_unit": run.window_unit,
         "metrics": run.metrics,
         "trade_log": list(reversed(run.trade_log or [])),
         "walk_forward": {
@@ -201,6 +206,7 @@ def get_walk_forward_run(run_id: int, db: Session = Depends(get_db)):
             "train_months": run.train_months,
             "trade_months": run.trade_months,
             "step_months": run.step_months,
+            "window_unit": run.window_unit,
             "window_metrics": run.window_metrics,
         },
     }

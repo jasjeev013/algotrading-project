@@ -10,6 +10,7 @@ def run_iterative_backtest(
     spread_pct: float = 0.0002,
     slippage_pct: float = 0.0001,
     overnight_financing_pct: float = 0.0,
+    force_close_at_end: bool = False,
 ):
     """
     Iterates through the signals row by row.
@@ -18,6 +19,12 @@ def run_iterative_backtest(
     slippage_pct: additional adverse fill-price move applied to each order.
     overnight_financing_pct: daily fee charged on equity for each calendar day
         a position is held across a bar-to-bar boundary (e.g. Forex swap rate).
+    force_close_at_end: liquidate any position still open on the last bar and
+        log it as a real exit trade, instead of leaving it dangling (unrealized
+        P&L already reflected in the last equity_curve point, but with no
+        matching trade_log entry). Used by the walk-forward engine so a window
+        boundary doesn't silently carry an open position into a fresh strategy
+        instance for the next window.
     """
     equity = initial_capital
     current_pos = 0  # 1 for Long, -1 for Short, 0 for Cash
@@ -105,5 +112,37 @@ def run_iterative_backtest(
         current_equity = equity * (1 + unrealized)
 
         equity_curve.append({"time": date, "equity": round(current_equity, 2)})
+
+    if force_close_at_end and current_pos != 0 and len(df) > 0:
+        last_row = df.iloc[-1]
+        price = last_row["close"]
+        date = last_row["time"]
+
+        exit_side = "sell" if current_pos == 1 else "buy"
+        exit_price = _apply_fill_costs(price, exit_side, spread_pct, slippage_pct)
+
+        if current_pos == 1:
+            gross_return = (exit_price - entry_price) / entry_price
+        else:
+            gross_return = (entry_price - exit_price) / entry_price
+
+        net_return = gross_return - (2 * commission_pct)
+        trade_profit = equity * net_return
+        equity += trade_profit
+
+        trade_log.append(
+            {
+                "type": "LONG" if current_pos == 1 else "SHORT",
+                "entry_date": entry_date,
+                "exit_date": date,
+                "entry_price": round(entry_price, 2),
+                "exit_price": round(exit_price, 2),
+                "net_return_pct": round(net_return * 100, 2),
+                "profit_loss": round(trade_profit, 2),
+                "equity_after": round(equity, 2),
+                "forced_close": True,
+            }
+        )
+        equity_curve[-1] = {"time": date, "equity": round(equity, 2)}
 
     return equity_curve, trade_log

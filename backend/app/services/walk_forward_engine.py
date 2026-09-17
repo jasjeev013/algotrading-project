@@ -2,16 +2,38 @@ import pandas as pd
 
 from app.services.backtester import run_iterative_backtest
 from app.services.analytics import calculate_metrics
+from app.utils.indicators import extract_indicator_data
 
 MAX_WINDOWS = 100
 
+WINDOW_UNITS = ("days", "weeks", "months")
 
-def generate_windows(dates, train_months=12, trade_months=3, step_months=None):
+
+def _offset(n, unit):
+    """
+    A length `n` in `unit` as something addable to a Timestamp. "months" uses
+    DateOffset (calendar-aware: adding 1 month to Jan 31 lands on the last day
+    of Feb, not an invalid date); "days"/"weeks" are exact fixed-length spans,
+    so plain Timedelta is enough for them.
+    """
+    if unit == "months":
+        return pd.DateOffset(months=n)
+    if unit == "weeks":
+        return pd.Timedelta(weeks=n)
+    if unit == "days":
+        return pd.Timedelta(days=n)
+    raise ValueError(f"Unknown window_unit '{unit}'; expected one of {WINDOW_UNITS}.")
+
+
+def generate_windows(dates, train_months=12, trade_months=3, step_months=None, window_unit="months"):
     """
     Splits a date range into rolling (train_start, train_end, trade_start, trade_end)
-    windows, anchored to calendar months. trade_end is exclusive of overall_end's
-    boundary check but the window itself is [train_start, train_end) train / [trade_start,
-    trade_end) trade, with train_end == trade_start (no gap, no overlap).
+    windows, anchored to `window_unit`-sized steps (days/weeks/months). trade_end is
+    exclusive of overall_end's boundary check but the window itself is [train_start,
+    train_end) train / [trade_start, trade_end) trade, with train_end == trade_start
+    (no gap, no overlap). train_months/trade_months/step_months are lengths measured
+    in `window_unit`, not necessarily calendar months, despite the field names kept
+    for backward compatibility with existing saved runs (which default to "months").
     """
     if step_months is None:
         step_months = trade_months
@@ -23,25 +45,30 @@ def generate_windows(dates, train_months=12, trade_months=3, step_months=None):
     overall_start = dates.iloc[0]
     overall_end = dates.iloc[-1]
 
+    train_offset = _offset(train_months, window_unit)
+    trade_offset = _offset(trade_months, window_unit)
+    step_offset = _offset(step_months, window_unit)
+
     windows = []
     window_start = overall_start
     while True:
-        train_end = window_start + pd.DateOffset(months=train_months)
-        trade_end = train_end + pd.DateOffset(months=trade_months)
+        train_end = window_start + train_offset
+        trade_end = train_end + trade_offset
         if trade_end > overall_end:
             break
         windows.append((window_start, train_end, train_end, trade_end))
         if len(windows) > MAX_WINDOWS:
             raise ValueError(
                 f"Walk-forward parameters produced more than {MAX_WINDOWS} windows; "
-                "widen train_months/trade_months/step_months or shorten the date range."
+                "widen train/trade/step length (or switch to a coarser window_unit) "
+                "or shorten the date range."
             )
-        window_start = window_start + pd.DateOffset(months=step_months)
+        window_start = window_start + step_offset
 
     if not windows:
         raise ValueError(
             "Date range is too short to form a single walk-forward window with the "
-            f"given train_months={train_months}/trade_months={trade_months}."
+            f"given train={train_months}/trade={trade_months} {window_unit}."
         )
 
     return windows
@@ -54,6 +81,7 @@ def run_walk_forward_backtest(
     train_months: int = 12,
     trade_months: int = 3,
     step_months: int | None = None,
+    window_unit: str = "months",
     initial_capital: float = 10000.0,
     commission_pct: float = 0.001,
     spread_pct: float = 0.0002,
@@ -74,13 +102,14 @@ def run_walk_forward_backtest(
         pair_df = pd.DataFrame(pair_raw_data)
         pair_df["time"] = pd.to_datetime(pair_df["time"])
 
-    windows = generate_windows(df["time"], train_months, trade_months, step_months)
+    windows = generate_windows(df["time"], train_months, trade_months, step_months, window_unit)
 
     equity = initial_capital
     combined_equity_curve = []
     combined_trade_log = []
     window_metrics = []
     importances = []
+    indicator_series = {}
 
     for idx, (train_start, train_end, trade_start, trade_end) in enumerate(windows):
         train_df = df[(df["time"] >= train_start) & (df["time"] < train_end)].reset_index(drop=True)
@@ -119,6 +148,13 @@ def run_walk_forward_backtest(
         if window_signals is None or window_signals.empty:
             continue
 
+        window_indicators = extract_indicator_data(strategy_instance, window_signals)
+        for key, spec in window_indicators.items():
+            bucket = indicator_series.setdefault(
+                key, {"label": spec["label"], "color": spec["color"], "scale": spec["scale"], "data": []}
+            )
+            bucket["data"].extend(spec["data"])
+
         equity_at_window_start = equity
         window_equity_curve, window_trade_log = run_iterative_backtest(
             df=window_signals,
@@ -127,6 +163,7 @@ def run_walk_forward_backtest(
             spread_pct=spread_pct,
             slippage_pct=slippage_pct,
             overnight_financing_pct=overnight_financing_pct,
+            force_close_at_end=True,
         )
         if window_equity_curve:
             equity = window_equity_curve[-1]["equity"]
@@ -166,4 +203,5 @@ def run_walk_forward_backtest(
         "trade_log": combined_trade_log,
         "window_metrics": window_metrics,
         "feature_importance": feature_importance,
+        "indicator_data": indicator_series,
     }

@@ -5,6 +5,7 @@ import FeatureImportancePanel from "../components/FeatureImportancePanel";
 import MetricsGrid from "../components/MetricsGrid";
 import TradeLogTable from "../components/TradeLogTable";
 import WalkForwardTable from "../components/WalkForwardTable";
+import WindowTimelineChart from "../components/WindowTimelineChart";
 
 // Walk-Forward tab: the in-content top bar plus the stitched-run results
 // (metrics, price/equity charts, per-window table, trade log).
@@ -36,6 +37,8 @@ const WalkForwardPage = ({ config, walkForward }) => {
         setTradeMonths={walkForward.setTradeMonths}
         stepMonths={walkForward.stepMonths}
         setStepMonths={walkForward.setStepMonths}
+        windowUnit={walkForward.windowUnit}
+        setWindowUnit={walkForward.setWindowUnit}
         warmupBars={walkForward.warmupBars}
         setWarmupBars={walkForward.setWarmupBars}
         loading={loading}
@@ -93,6 +96,20 @@ const WalkForwardPage = ({ config, walkForward }) => {
               stored for past runs, only metrics, per-window results, and the
               trade log.
             </p>
+          )}
+
+          {results.walk_forward?.window_metrics?.length > 0 && (
+            <div className="section-block">
+              <h2>Window Timeline</h2>
+              <p className="section-desc">
+                Each row's muted bar is the training period, the colored bar
+                is what it traded out-of-sample — hover a trade bar for its
+                full metrics.
+              </p>
+              <WindowTimelineChart
+                windowMetrics={results.walk_forward.window_metrics}
+              />
+            </div>
           )}
 
           <WalkForwardTable walkForward={results.walk_forward} />

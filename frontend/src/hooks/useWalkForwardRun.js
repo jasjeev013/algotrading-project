@@ -12,6 +12,7 @@ export function useWalkForwardRun(config, setMode) {
   const [trainMonths, setTrainMonths] = useState(12);
   const [tradeMonths, setTradeMonths] = useState(3);
   const [stepMonths, setStepMonths] = useState("");
+  const [windowUnit, setWindowUnit] = useState("months");
   const [warmupBars, setWarmupBars] = useState(60);
 
   const [loading, setLoading] = useState(false);
@@ -30,6 +31,7 @@ export function useWalkForwardRun(config, setMode) {
       train_months: parseInt(trainMonths, 10),
       trade_months: parseInt(tradeMonths, 10),
       ...(stepMonths ? { step_months: parseInt(stepMonths, 10) } : {}),
+      window_unit: windowUnit,
       ...(NON_FITTING_STRATEGIES.includes(config.strategy)
         ? { warmup_bars: parseInt(warmupBars, 10) }
         : {}),
@@ -76,6 +78,7 @@ export function useWalkForwardRun(config, setMode) {
       setTrainMonths(run.train_months);
       setTradeMonths(run.trade_months);
       setStepMonths(run.step_months);
+      setWindowUnit(run.window_unit || "months");
 
       setResults(run);
     } catch (err) {
@@ -94,6 +97,8 @@ export function useWalkForwardRun(config, setMode) {
     setTradeMonths,
     stepMonths,
     setStepMonths,
+    windowUnit,
+    setWindowUnit,
     warmupBars,
     setWarmupBars,
     loading,

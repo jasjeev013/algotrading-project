@@ -28,6 +28,8 @@ const WalkForwardTopBar = ({
   setTradeMonths,
   stepMonths,
   setStepMonths,
+  windowUnit,
+  setWindowUnit,
   warmupBars,
   setWarmupBars,
   loading,
@@ -156,7 +158,19 @@ const WalkForwardTopBar = ({
           />
 
           <div className="input-group topbar-field-sm">
-            <label>Train Months</label>
+            <label>Window Unit</label>
+            <select
+              value={windowUnit}
+              onChange={(e) => setWindowUnit(e.target.value)}
+            >
+              <option value="days">Days</option>
+              <option value="weeks">Weeks</option>
+              <option value="months">Months</option>
+            </select>
+          </div>
+
+          <div className="input-group topbar-field-sm">
+            <label>Train Length</label>
             <input
               type="number"
               min="1"
@@ -166,7 +180,7 @@ const WalkForwardTopBar = ({
           </div>
 
           <div className="input-group topbar-field-sm">
-            <label>Trade Months</label>
+            <label>Trade Length</label>
             <input
               type="number"
               min="1"
@@ -176,7 +190,7 @@ const WalkForwardTopBar = ({
           </div>
 
           <div className="input-group topbar-field-sm">
-            <label>Step Months (optional)</label>
+            <label>Step Length (optional)</label>
             <input
               type="number"
               min="1"
@@ -199,9 +213,10 @@ const WalkForwardTopBar = ({
           )}
 
           <p className="params-hint">
-            Trains on each {trainMonths}-month rolling window, then trades
-            the next {tradeMonths} months out-of-sample — repeated across the
-            full date range and stitched into one continuous equity curve.
+            Trains on each {trainMonths}-{windowUnit} rolling window, then
+            trades the next {tradeMonths} {windowUnit} out-of-sample —
+            repeated across the full date range and stitched into one
+            continuous equity curve.
           </p>
         </div>
       </details>

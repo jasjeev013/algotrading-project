@@ -80,6 +80,7 @@ class WalkForwardRun(Base):
     train_months = Column(Integer, nullable=False)
     trade_months = Column(Integer, nullable=False)
     step_months = Column(Integer, nullable=False)
+    window_unit = Column(String, nullable=False, default="months")
     strategy_params = Column(JSON, nullable=False, default=dict)
     metrics = Column(JSON, nullable=False, default=dict)
     window_metrics = Column(JSON, nullable=False, default=list)

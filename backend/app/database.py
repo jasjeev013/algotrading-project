@@ -56,3 +56,18 @@ def _run_lightweight_migrations():
                 conn.commit()
         except Exception:
             pass
+
+        try:
+            wf_cols = {
+                row[1]
+                for row in conn.execute(text("PRAGMA table_info(walk_forward_runs)"))
+            }
+            if wf_cols and "window_unit" not in wf_cols:
+                conn.execute(
+                    text(
+                        "ALTER TABLE walk_forward_runs ADD COLUMN window_unit VARCHAR DEFAULT 'months'"
+                    )
+                )
+                conn.commit()
+        except Exception:
+            pass
