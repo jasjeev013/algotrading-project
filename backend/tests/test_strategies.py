@@ -1,18 +1,21 @@
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import numpy as np
-import pytest
+
 from app.services.strategies import (
-    BuyAndHold,
-    SMACrossover,
     BollingerBands,
+    BuyAndHold,
+    ContrarianStrategy,
     EMACrossover,
     MACDStrategy,
-    RSIMeanReversion,
-    ContrarianStrategy,
     NDayMomentum,
+    RSIMeanReversion,
+    SMACrossover,
 )
+
 
 def _make_data(n=120):
     np.random.seed(42)

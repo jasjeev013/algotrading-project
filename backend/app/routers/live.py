@@ -7,7 +7,8 @@ from app.database import get_db
 from app.models import LiveTradeRecord
 from app.schemas.live import LiveBotStartRequest
 from app.services.execution_handler import OandaExecutionHandler
-from app.services.live_bot import bot_controller, logger as live_bot_logger, _adapt_candles
+from app.services.live_bot import _adapt_candles, bot_controller
+from app.services.live_bot import logger as live_bot_logger
 from app.strategy_registry import LIVE_ELIGIBLE_STRATEGIES
 
 # ---------------------------------------------------------------------------

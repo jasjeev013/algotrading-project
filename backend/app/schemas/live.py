@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from pydantic import BaseModel
 
-from app.config import LIVE_TRADE_UNITS, MIN_ACCOUNT_BALANCE, MAX_OPEN_POSITIONS
+from app.config import LIVE_TRADE_UNITS, MAX_OPEN_POSITIONS, MIN_ACCOUNT_BALANCE
 
 
 class LiveBotStartRequest(BaseModel):

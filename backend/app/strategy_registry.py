@@ -1,14 +1,14 @@
 from app.services.strategies import (
-    BuyAndHold,
-    SMACrossover,
     BollingerBands,
-    MLRandomForest,
-    StatArbitrageStrategy,
+    BuyAndHold,
+    ContrarianStrategy,
     EMACrossover,
     MACDStrategy,
-    RSIMeanReversion,
-    ContrarianStrategy,
+    MLRandomForest,
     NDayMomentum,
+    RSIMeanReversion,
+    SMACrossover,
+    StatArbitrageStrategy,
 )
 
 STRATEGY_REGISTRY = {

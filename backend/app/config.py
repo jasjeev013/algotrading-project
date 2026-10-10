@@ -1,6 +1,7 @@
-from dotenv import load_dotenv
 import os
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 # Local dev: .env lives at the project root, two levels above backend/app/.
 # In Docker, only backend/ is mounted into the container, so that path won't

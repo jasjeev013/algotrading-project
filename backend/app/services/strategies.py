@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from statsmodels.tsa.stattools import coint
 
@@ -86,7 +87,8 @@ class  SMACrossover(BaseStrategy):
         df.iloc[:long_window, df.columns.get_loc("position")] = 0
 
         # Calculate Signal (The action to take).
-        # diff() shows when the position changes (e.g., from -1 to 1 means a signal of 2... meaning buy to cover + buy to open)
+        # diff() shows when the position changes (e.g., from -1 to 1 means a signal
+        # of 2... meaning buy to cover + buy to open)
         df["signal"] = df["position"].diff().fillna(0)
 
         return df
