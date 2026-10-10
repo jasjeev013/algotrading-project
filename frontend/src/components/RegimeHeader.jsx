@@ -23,7 +23,7 @@ const RegimeHeader = () => {
           setRegime(res.data);
           setError(null);
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) setError("Regime data unavailable");
       }
     };

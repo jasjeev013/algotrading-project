@@ -42,6 +42,10 @@ const AboutPanel = () => (
     <Section title="Strategies">
       <DefList items={[
         {
+          term: "Buy & Hold",
+          def: "The baseline strategy. Buys on the first bar and holds a long position for the entire window — no signals, no parameters. Used as a reference line to judge whether the other strategies actually beat simply holding the asset.",
+        },
+        {
           term: "SMA Crossover",
           def: "Simple Moving Average crossover strategy. Goes long when the short-window SMA (default 20 bars) crosses above the long-window SMA (default 50 bars), and short when it crosses below. A trend-following approach — it works well in trending markets and badly in choppy sideways periods.",
         },

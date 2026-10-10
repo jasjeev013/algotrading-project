@@ -1,0 +1,5 @@
+- Currently the live paper trading functionality is using the rest api from frontend to backend moreover that could be enhanced and better up by using the websockets functionality. Also the connection of backend to OANDA can also be also possible using estabilishing sockets
+- In frontend there is no use of persisting or like state managment tool like redux, zustand is it not required or what?
+- The DB schemas need to be corrected properly
+- THe backend logics is just kept in directories nor sort proper directory structure with proper files in that need to be done
+- 
