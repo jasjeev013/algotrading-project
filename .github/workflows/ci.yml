@@ -33,7 +33,7 @@ jobs:
           cache: "pip"
           cache-dependency-path: backend/requirements-dev.txt
       - run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
-      - run: mypy backend
+      - run: mypy --config-file backend/pyproject.toml backend
 
   test-backend:
     runs-on: ubuntu-latest
