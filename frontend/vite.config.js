@@ -11,4 +11,9 @@ export default defineConfig({
       usePolling: true, // Needed for hot-reloading inside Docker Windows/Mac
     },
   },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: "./src/test/setup.js",
+  },
 });
