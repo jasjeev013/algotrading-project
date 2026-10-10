@@ -1,12 +1,12 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import (
+    JSON,
     Column,
     DateTime,
     Float,
     ForeignKey,
     Integer,
-    JSON,
     String,
 )
 from sqlalchemy.orm import relationship

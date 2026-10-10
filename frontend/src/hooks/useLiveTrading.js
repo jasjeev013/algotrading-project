@@ -46,7 +46,7 @@ export function useLiveTrading(mode) {
           timeout: 8000,
         });
         if (!cancelled) setAccount(res.data.account);
-      } catch (err) {
+      } catch {
         if (!cancelled) setAccount(null);
       }
     };
@@ -56,7 +56,7 @@ export function useLiveTrading(mode) {
           timeout: 8000,
         });
         if (!cancelled) setStatus(res.data);
-      } catch (err) {
+      } catch {
         if (!cancelled) setStatus(null);
       }
     };
@@ -89,7 +89,7 @@ export function useLiveTrading(mode) {
           timeout: 8000,
         });
         if (!cancelled) setCandles(res.data.candles || []);
-      } catch (err) {
+      } catch {
         if (!cancelled) setCandles([]);
       }
     };
@@ -99,7 +99,7 @@ export function useLiveTrading(mode) {
           timeout: 8000,
         });
         if (!cancelled) setTrades(res.data.trades || []);
-      } catch (err) {
+      } catch {
         if (!cancelled) setTrades([]);
       }
     };

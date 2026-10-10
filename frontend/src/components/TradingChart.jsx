@@ -20,12 +20,15 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }) => {
   const [chartType, setChartType] = useState("candlestick");
   const [showMarkers, setShowMarkers] = useState(true);
 
-  // Reset visibility when indicator set changes (new strategy selected)
-  useEffect(() => {
-    const initial = {};
-    for (const key of Object.keys(indicatorData)) initial[key] = true;
-    setVisible(initial);
-  }, [Object.keys(indicatorData).join(",")]);
+  // Reset visibility when indicator set changes (new strategy selected).
+  // Adjusted during render (not in an effect) per React's guidance for
+  // state that derives from a prop change, to avoid an extra render pass.
+  const indicatorKeys = Object.keys(indicatorData).join(",");
+  const [prevIndicatorKeys, setPrevIndicatorKeys] = useState(indicatorKeys);
+  if (indicatorKeys !== prevIndicatorKeys) {
+    setPrevIndicatorKeys(indicatorKeys);
+    setVisible({});
+  }
 
   // Build chart
   useEffect(() => {

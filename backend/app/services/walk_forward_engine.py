@@ -1,7 +1,7 @@
 import pandas as pd
 
-from app.services.backtester import run_iterative_backtest
 from app.services.analytics import calculate_metrics
+from app.services.backtester import run_iterative_backtest
 from app.utils.indicators import extract_indicator_data
 
 MAX_WINDOWS = 100

@@ -8,14 +8,17 @@ Plain-script style (no pytest), matching test_strategies.py in this repo.
 Run with: python test_backtester_parity.py
 """
 
-import numpy as np
-import pandas as pd
 
 from datetime import date, timedelta
 
-from app.services.data_fetcher import fetch_historical_data
-from app.services.strategies import SMACrossover, BollingerBands, MLRandomForest, StatArbitrageStrategy
 from app.services.backtester import run_iterative_backtest
+from app.services.data_fetcher import fetch_historical_data
+from app.services.strategies import (
+    BollingerBands,
+    MLRandomForest,
+    SMACrossover,
+    StatArbitrageStrategy,
+)
 from app.services.vectorized_backtester import run_vectorized_backtest
 
 EQUITY_TOL = 0.02  # dollars, allows for independent rounding paths
@@ -55,7 +58,10 @@ def _compare(name, signals, **cost_kwargs):
         _assert_close(a["profit_loss"], b["profit_loss"], EQUITY_TOL, f"[{name}] trade[{i}].profit_loss")
         _assert_close(a["equity_after"], b["equity_after"], EQUITY_TOL, f"[{name}] trade[{i}].equity_after")
 
-    print(f"OK  {name}: {len(iter_trades)} trades, final equity iter={iter_equity[-1]['equity']} vec={vec_equity[-1]['equity']}")
+    print(
+        f"OK  {name}: {len(iter_trades)} trades, "
+        f"final equity iter={iter_equity[-1]['equity']} vec={vec_equity[-1]['equity']}"
+    )
 
 
 def main():
@@ -66,8 +72,20 @@ def main():
     intraday = fetch_historical_data("AAPL", intraday_start, intraday_end, "15m")
 
     cost_configs = [
-        {"initial_capital": 10000.0, "commission_pct": 0.001, "spread_pct": 0.0002, "slippage_pct": 0.0001, "overnight_financing_pct": 0.0},
-        {"initial_capital": 10000.0, "commission_pct": 0.001, "spread_pct": 0.0002, "slippage_pct": 0.0001, "overnight_financing_pct": 0.0005},
+        {
+            "initial_capital": 10000.0,
+            "commission_pct": 0.001,
+            "spread_pct": 0.0002,
+            "slippage_pct": 0.0001,
+            "overnight_financing_pct": 0.0,
+        },
+        {
+            "initial_capital": 10000.0,
+            "commission_pct": 0.001,
+            "spread_pct": 0.0002,
+            "slippage_pct": 0.0001,
+            "overnight_financing_pct": 0.0005,
+        },
     ]
 
     for costs in cost_configs:

@@ -83,6 +83,6 @@ def list_history(db: Session = Depends(get_db)):
         for trade in live_trades
     ]
 
-    normalized.sort(key=lambda row: row["created_at"] or "", reverse=True)
+    normalized.sort(key=lambda row: str(row["created_at"] or ""), reverse=True)
 
     return {"status": "success", "runs": normalized}

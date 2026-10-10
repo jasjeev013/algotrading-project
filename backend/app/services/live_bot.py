@@ -4,11 +4,11 @@ import os
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 
-from app.config import LIVE_TRADE_UNITS, MIN_ACCOUNT_BALANCE, MAX_OPEN_POSITIONS
+from app.config import LIVE_TRADE_UNITS, MAX_OPEN_POSITIONS, MIN_ACCOUNT_BALANCE
 from app.database import SessionLocal
-from app.services.execution_handler import OandaExecutionHandler, _extract_realized_pl
 from app.models import LiveTradeRecord
-from app.strategy_registry import STRATEGY_REGISTRY, LIVE_ELIGIBLE_STRATEGIES
+from app.services.execution_handler import OandaExecutionHandler, _extract_realized_pl
+from app.strategy_registry import STRATEGY_REGISTRY
 
 # backend/app/services/live_bot.py -> backend/logs (two levels up from here).
 LOG_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "logs")

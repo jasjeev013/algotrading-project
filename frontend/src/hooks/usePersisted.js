@@ -16,7 +16,9 @@ export function usePersisted(key, defaultValue) {
   useEffect(() => {
     try {
       localStorage.setItem(key, JSON.stringify(value));
-    } catch {}
+    } catch {
+      // Storage unavailable or full — persistence is best-effort.
+    }
   }, [key, value]);
   return [value, setValue];
 }

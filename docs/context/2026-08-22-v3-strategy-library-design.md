@@ -143,4 +143,4 @@ Walk-forward endpoint returns `"indicator_data": {}` for now (walk-forward signa
 | A | 1–2 | Refine existing strategies; build infrastructure |
 | B | 3–6 | Add new strategies category by category |
 
-Implementation plans: `docs/superpowers/plans/2026-08-22-v3-slice{N}-*.md`
+Implementation plans: `docs/context/plans/2026-08-22-v3-slice{N}-*.md`
