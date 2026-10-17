@@ -28,5 +28,5 @@ Implementation plans Claude wrote before executing a task — one file per task,
 - [plans/2026-08-22-v3-slice6-volatility-strategies.md](plans/2026-08-22-v3-slice6-volatility-strategies.md)
 - [plans/2026-10-10-cicd-pipeline-plan.md](plans/2026-10-10-cicd-pipeline-plan.md) — GitHub Actions CI/CD setup
 - [plans/2026-10-17-frontend-typescript-migration.md](plans/2026-10-17-frontend-typescript-migration.md) — big-bang JS→TS frontend migration + `typecheck-frontend` CI job
-- [plans/2026-10-17-shadcn-ui-redesign.md](plans/2026-10-17-shadcn-ui-redesign.md) — Phase 1: shadcn/ui + Tailwind, brutalist/light theme, new app shell + Backtest page
+- [plans/2026-10-17-shadcn-ui-redesign.md](plans/2026-10-17-shadcn-ui-redesign.md) — shadcn/ui + Tailwind, screener.in-style sober theme, applied app-wide
 - [plans/2026-10-17-shadcn-ui-redesign-implementation-plan.md](plans/2026-10-17-shadcn-ui-redesign-implementation-plan.md) — 9-task implementation plan for the above spec

@@ -1,4 +1,4 @@
-# QuantDash UI Redesign: shadcn/ui + Sober (screener.in-style) Theme (Phase 1: Shell + Backtest Page)
+# QuantDash UI Redesign: shadcn/ui + Sober (screener.in-style) Theme (Phase 1 + 2 — complete: all pages)
 
 > **Revision note (post-implementation):** the original brainstormed direction below ("brutalist/light": thick black borders, zero radius, uppercase tracked labels) shipped but still read as templated/AI-generated once seen live. Live feedback asked to replicate screener.in's actual look instead. The **Decisions** section has been updated in place to the direction that actually shipped; the superseded brutalist decisions are struck through for history.
 
@@ -44,8 +44,7 @@ Theme tokens (`@theme` block in `src/index.css`, replacing the `:root` variables
 - App shell (`App.tsx`, `TopBar.tsx`, `NavRail.tsx`, `RegimeHeader.tsx`): rebuilt as a single persistent labeled sidebar + content area. The hover-expanding icon rail and separate topbar strip are removed; brand mark moves inline with page content. `RegimeHeader`'s content (regime/VIX display) is kept but relocated into the new shell layout rather than its own top strip — exact placement decided during implementation, consistent with "no separate topbar."
 - `BacktestPage.tsx` and its direct children (`MetricsGrid`/`MetricCard`, `TradeLogTable`, the backtest top control bar currently in `.backtest-topbar`) migrated end-to-end to shadcn primitives (`Button`, `Input`/`Select` equivalents, `Card`, `Table`, `Tabs` if applicable) as the reference implementation other pages will follow in Phase 2.
 
-**Explicitly out of scope for this task (Phase 2, separate follow-up):**
-- `WalkForwardPage`, `LivePage`, `HistoryPage`, `SettingsPage`, `AboutPage` and their dedicated components (`WalkForwardTable`, `LiveChart`/`LivePanel`/`LiveSidebar`, `HistoryPanel`/`HistorySidebar`, `AdvancedSettingsPanel`/`Sidebar`, `AboutPanel`, `FeatureImportancePanel`, `WindowTimelineChart`) — these keep their current CSS/markup until Phase 2 migrates them to match the new shell and theme.
+**Phase 2 (completed):** `WalkForwardPage`, `LivePage`, `HistoryPage`, `SettingsPage`, `AboutPage` and their dedicated components (`WalkForwardTable`/`WalkForwardTopBar`, `LiveChart`/`LivePanel`/`LiveSidebar`, `HistoryPanel`/`HistorySidebar`, `AdvancedSettingsPanel`/`Sidebar`, `AboutPanel`, `WindowTimelineChart`) were migrated to the same primitives and theme, closing the scope this section originally deferred. `StrategyParamsFields`/`BacktestStrategyParamsFields` were also collapsed back into one shared component once both tabs needed the same styling. `App.css` was deleted entirely once nothing referenced it anymore.
 
 ## Testing
 

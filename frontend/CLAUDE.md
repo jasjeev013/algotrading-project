@@ -1,7 +1,9 @@
 # Frontend Directory Map
 
-React 19 + Vite + TypeScript (`strict` mode). Entry point: `src/main.tsx` →
-`src/App.tsx`.
+React 19 + Vite + TypeScript (`strict` mode) + Tailwind CSS v4. Entry point:
+`src/main.tsx` → `src/App.tsx`. UI theme: sober, screener.in-inspired
+(Inter, white background, thin gray borders, blue accent, semantic
+red/green only) — see `docs/context/plans/2026-10-17-shadcn-ui-redesign.md`.
 
 For *why* things work the way they do, see `docs/context/` at the repo root
 (`frontend-db-costs.md` covers state persistence/DB schema/cost calculations).
@@ -11,8 +13,11 @@ This file only maps *where* things are.
 src/
 ├── main.tsx            # React root render
 ├── App.tsx               # top-level app: layout, routing between pages, shared state
-├── App.css / index.css
+├── index.css              # Tailwind entry + @theme tokens + global resets
 ├── vite-env.d.ts          # Vite client type references (CSS/asset imports, import.meta.env)
+├── components.json         # shadcn-style config (aliases, theme pointers)
+├── lib/
+│   └── utils.ts              # cn() — clsx + tailwind-merge
 ├── api/
 │   ├── config.ts            # axios instance / base URL config for backend calls
 │   └── errors.ts             # extractErrorDetail — shared axios error-message helper
@@ -31,18 +36,24 @@ src/
 │   ├── LivePage.tsx
 │   ├── SettingsPage.tsx
 │   └── WalkForwardPage.tsx
-├── components/              # shared/reusable UI pieces, used across pages
-│   ├── TradingChart.tsx        # lightweight-charts v5 candlestick + trade markers
+├── components/
+│   ├── ui/                    # shadcn-style primitives (cva + cn, no Radix — see the redesign spec)
+│   │   ├── button.tsx / input.tsx / select.tsx
+│   │   └── card.tsx / badge.tsx / table.tsx
+│   ├── Sidebar.tsx              # persistent labeled nav + market/backend status footer
+│   ├── RegimeHeader.tsx          # SPY/VIX/regime strip, shown above every page
+│   ├── TradingChart.tsx            # lightweight-charts v5 candlestick + trade markers
 │   ├── EquityCurveChart.tsx
+│   ├── LiveChart.tsx
 │   ├── WindowTimelineChart.tsx
 │   ├── MetricsGrid.tsx / MetricCard.tsx
 │   ├── TradeLogTable.tsx
 │   ├── WalkForwardTable.tsx / WalkForwardTopBar.tsx
 │   ├── HistoryPanel.tsx / HistorySidebar.tsx
-│   ├── LiveChart.tsx / LivePanel.tsx / LiveSidebar.tsx
+│   ├── LivePanel.tsx / LiveSidebar.tsx
 │   ├── AdvancedSettingsPanel.tsx / AdvancedSettingsSidebar.tsx
-│   ├── StrategyParamsFields.tsx
-│   ├── RegimeHeader.tsx / NavRail.tsx / TopBar.tsx
+│   ├── BacktestTopBar.tsx
+│   ├── StrategyParamsFields.tsx  # shared by BacktestTopBar and WalkForwardTopBar
 │   ├── AboutPanel.tsx
 │   └── FeatureImportancePanel.tsx
 ├── hooks/                   # custom hooks, one concern each
@@ -54,6 +65,8 @@ src/
 │   └── useWalkForwardRun.ts
 ├── constants/
 │   └── strategyDefaults.ts   # default param values per strategy
+├── utils/
+│   └── chartTime.ts            # toChartTime — lightweight-charts time conversion helper
 ├── test/
 │   └── setup.ts                # vitest + testing-library/jest-dom setup
 └── __tests__/
