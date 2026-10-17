@@ -27,3 +27,4 @@ Implementation plans Claude wrote before executing a task — one file per task,
 - [plans/2026-08-22-v3-slice5-mean-reversion.md](plans/2026-08-22-v3-slice5-mean-reversion.md)
 - [plans/2026-08-22-v3-slice6-volatility-strategies.md](plans/2026-08-22-v3-slice6-volatility-strategies.md)
 - [plans/2026-10-10-cicd-pipeline-plan.md](plans/2026-10-10-cicd-pipeline-plan.md) — GitHub Actions CI/CD setup
+- [plans/2026-10-17-frontend-typescript-migration.md](plans/2026-10-17-frontend-typescript-migration.md) — big-bang JS→TS frontend migration + `typecheck-frontend` CI job
