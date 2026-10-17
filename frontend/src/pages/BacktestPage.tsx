@@ -44,12 +44,14 @@ const BacktestPage = ({ config, backtest }: BacktestPageProps) => {
       <p className="mb-5 text-[12.5px] text-muted-foreground">Historical simulation over the selected date range.</p>
 
       {error && (
-        <div className="mb-4 border-2 border-negative px-3 py-2.5 text-[13px] text-negative">{error}</div>
+        <div className="mb-4 rounded-md border border-negative/30 bg-negative/5 px-3 py-2.5 text-[13px] text-negative">
+          {error}
+        </div>
       )}
 
       {loading && (
         <div className="mt-16 flex flex-col items-center gap-3">
-          <div className="h-6 w-6 animate-spin border-2 border-foreground border-l-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
           <p className="text-[12.5px] text-muted-foreground">Running Backtest Engine…</p>
         </div>
       )}
@@ -60,7 +62,7 @@ const BacktestPage = ({ config, backtest }: BacktestPageProps) => {
 
           {results.price_data && (
             <div className="mb-6">
-              <h2 className="mb-1 text-sm font-bold uppercase tracking-wide">Price Chart & Executions</h2>
+              <h2 className="mb-1 text-[15px] font-semibold">Price Chart & Executions</h2>
               <p className="mb-2.5 text-[12px] text-muted-foreground">
                 Green arrows = Buy, Red arrows = Sell Short, Orange arrows = Exit Position.
               </p>
@@ -74,7 +76,7 @@ const BacktestPage = ({ config, backtest }: BacktestPageProps) => {
 
           {results.equity_curve && (
             <div className="mb-6">
-              <h2 className="mb-1 text-sm font-bold uppercase tracking-wide">Equity Curve</h2>
+              <h2 className="mb-1 text-[15px] font-semibold">Equity Curve</h2>
               <p className="mb-2.5 text-[12px] text-muted-foreground">Portfolio value over the backtest window.</p>
               <EquityCurveChart equityCurve={results.equity_curve} />
             </div>
@@ -94,8 +96,7 @@ const BacktestPage = ({ config, backtest }: BacktestPageProps) => {
       )}
 
       {!results && !loading && !error && (
-        <div className="mt-16 text-center text-[13.5px] text-muted-foreground">
-          <div className="mb-2 text-2xl opacity-40">📈</div>
+        <div className="mt-16 rounded-md border border-dashed border-border py-12 text-center text-[13.5px] text-muted-foreground">
           Configure your parameters above and click "Run Backtest" to begin.
         </div>
       )}

@@ -19,12 +19,12 @@ const EquityCurveChart = ({ equityCurve }: EquityCurveChartProps) => {
       width: container.clientWidth,
       height: 260,
       layout: {
-        background: { color: "#f4f2ee" },
-        textColor: "#5c574c",
+        background: { color: "#ffffff" },
+        textColor: "#6b7280",
       },
       grid: {
-        vertLines: { color: "#e7e3da" },
-        horzLines: { color: "#e7e3da" },
+        vertLines: { color: "#eef0f2" },
+        horzLines: { color: "#eef0f2" },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
@@ -32,10 +32,10 @@ const EquityCurveChart = ({ equityCurve }: EquityCurveChartProps) => {
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
-        borderColor: "#ddd8cc",
+        borderColor: "#e3e5e9",
       },
       rightPriceScale: {
-        borderColor: "#ddd8cc",
+        borderColor: "#e3e5e9",
       },
     });
 
@@ -70,8 +70,10 @@ const EquityCurveChart = ({ equityCurve }: EquityCurveChartProps) => {
       style={{
         position: "relative",
         width: "100%",
-        background: "#f4f2ee",
-        border: "1px solid #ddd8cc",
+        background: "#ffffff",
+        borderRadius: "6px",
+        border: "1px solid #e3e5e9",
+        overflow: "hidden",
       }}
     />
   );

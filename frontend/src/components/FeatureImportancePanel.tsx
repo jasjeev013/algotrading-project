@@ -10,7 +10,7 @@ const FeatureImportancePanel = ({ featureImportance }: FeatureImportancePanelPro
 
   return (
     <div className="mb-6">
-      <h2 className="mb-1 text-sm font-bold uppercase tracking-wide">Feature Importance</h2>
+      <h2 className="mb-1 text-[15px] font-semibold">Feature Importance</h2>
       <p className="mb-3 text-[12px] text-muted-foreground">
         Relative contribution of each input feature to the Random Forest's predictions (averaged across
         walk-forward windows, if used).

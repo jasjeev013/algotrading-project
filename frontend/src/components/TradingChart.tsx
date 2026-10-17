@@ -47,11 +47,11 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }: TradingChartP
     const chart = createChart(container, {
       width: container.clientWidth,
       height: 400,
-      layout: { background: { color: "#f4f2ee" }, textColor: "#5c574c" },
-      grid: { vertLines: { color: "#e7e3da" }, horzLines: { color: "#e7e3da" } },
+      layout: { background: { color: "#ffffff" }, textColor: "#6b7280" },
+      grid: { vertLines: { color: "#eef0f2" }, horzLines: { color: "#eef0f2" } },
       crosshair: { mode: CrosshairMode.Normal },
-      timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#ddd8cc" },
-      rightPriceScale: { borderColor: "#ddd8cc" },
+      timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#e3e5e9" },
+      rightPriceScale: { borderColor: "#e3e5e9" },
     });
     lineSeriesRefs.current = {};
 
@@ -157,27 +157,37 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }: TradingChartP
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap", marginBottom: "8px" }}>
         {Object.entries(indicatorData).map(([key, spec]) => (
-          <label key={key} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "#5c574c" }}>
+          <label key={key} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "#6b7280" }}>
             <input type="checkbox" checked={visible[key] !== false}
               onChange={(e) => setVisible((p) => ({ ...p, [key]: e.target.checked }))} />
             <span style={{ display: "inline-block", width: 12, height: 2, background: spec.color, verticalAlign: "middle" }} />
             {spec.label}
           </label>
         ))}
-        <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "#5c574c" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "#6b7280" }}>
           <input type="checkbox" checked={showMarkers}
             onChange={(e) => setShowMarkers(e.target.checked)} />
           Entry/Exit arrows
         </label>
-        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#5c574c", marginLeft: "auto" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#6b7280", marginLeft: "auto" }}>
           Chart type
           <select value={chartType} onChange={(e) => setChartType(e.target.value)}
-            style={{ background: "#f4f2ee", color: "#111111", border: "1px solid #ddd8cc", padding: "2px 6px", fontSize: "12px" }}>
+            style={{ background: "#ffffff", color: "#1a1d23", border: "1px solid #e3e5e9", borderRadius: "4px", padding: "2px 6px", fontSize: "12px" }}>
             {CHART_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
         </label>
       </div>
-      <div ref={chartContainerRef} style={{ position: "relative", width: "100%", background: "#f4f2ee", border: "1px solid #ddd8cc" }} />
+      <div
+        ref={chartContainerRef}
+        style={{
+          position: "relative",
+          width: "100%",
+          background: "#ffffff",
+          borderRadius: "6px",
+          border: "1px solid #e3e5e9",
+          overflow: "hidden",
+        }}
+      />
     </div>
   );
 };

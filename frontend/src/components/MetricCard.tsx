@@ -64,7 +64,7 @@ const MetricCard = ({ title, value, suffix = "", isColorCoded = false, info }: M
                 coords &&
                 createPortal(
                   <span
-                    className="fixed z-[1000] w-[200px] -translate-x-1/2 -translate-y-[calc(100%+8px)] border border-border bg-background p-2 text-[11px] font-normal leading-relaxed text-foreground shadow-md"
+                    className="fixed z-[1000] w-[200px] -translate-x-1/2 -translate-y-[calc(100%+8px)] rounded-md border border-border bg-background p-2 text-[11px] font-normal leading-relaxed text-foreground shadow-md"
                     style={{ top: coords.top, left: coords.left }}
                   >
                     {info}

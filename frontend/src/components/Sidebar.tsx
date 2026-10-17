@@ -130,20 +130,20 @@ const Sidebar = ({ mode, onSelect }: SidebarProps) => {
   return (
     <div className="flex h-full w-56 flex-shrink-0 flex-col border-r border-border bg-background text-foreground">
       <div className="border-b border-border px-4 py-4">
-        <div className="text-lg font-bold tracking-tight">QUANTDASH</div>
-        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Algorithmic Trading</div>
+        <div className="text-[15px] font-semibold">QuantDash</div>
+        <div className="text-[12px] text-muted-foreground">Algorithmic Trading</div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto py-3">
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
         {NAV_ITEMS.map((item) => (
           <button
             key={item.mode}
             onClick={() => onSelect(item.mode)}
             className={cn(
-              "flex items-center gap-3 border-l-4 px-4 py-2.5 text-left text-[13px] font-bold uppercase tracking-wide transition-colors",
+              "flex items-center gap-3 rounded-md px-3 py-2 text-left text-[13px] font-medium transition-colors",
               mode === item.mode
-                ? "border-foreground bg-muted text-foreground"
-                : "border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                ? "bg-accent/10 text-accent"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             <span className="h-4 w-4 flex-shrink-0">{ICONS[item.mode]}</span>
@@ -156,7 +156,7 @@ const Sidebar = ({ mode, onSelect }: SidebarProps) => {
         <div className="flex items-center gap-2 py-1">
           <span
             className={cn(
-              "h-2 w-2",
+              "h-2 w-2 rounded-full",
               marketStatus === "open" ? "bg-positive" : marketStatus === "closed" ? "bg-negative" : "bg-muted-foreground",
             )}
           />
@@ -165,7 +165,7 @@ const Sidebar = ({ mode, onSelect }: SidebarProps) => {
         <div className="flex items-center gap-2 py-1">
           <span
             className={cn(
-              "h-2 w-2",
+              "h-2 w-2 rounded-full",
               connected === null ? "bg-muted-foreground" : connected ? "bg-positive" : "bg-negative",
             )}
           />

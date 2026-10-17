@@ -9,7 +9,7 @@ interface TradeLogTableProps {
 
 const TradeLogTable = ({ tradeLog }: TradeLogTableProps) => (
   <details className="mb-6" open>
-    <summary className="mb-3 cursor-pointer text-sm font-bold uppercase tracking-wide">Trade Log</summary>
+    <summary className="mb-3 cursor-pointer text-[15px] font-semibold">Trade Log</summary>
     <Table>
       <TableHeader>
         <TableRow>

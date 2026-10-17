@@ -64,7 +64,7 @@ const BacktestTopBar = ({
   const [paramsOpen, setParamsOpen] = useState(true);
   const field = (label: string, children: ReactNode, width = "w-[130px]") => (
     <div className={width}>
-      <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground">
+      <label className="mb-1.5 block text-[12.5px] font-medium text-muted-foreground">
         {label}
       </label>
       {children}
@@ -72,7 +72,7 @@ const BacktestTopBar = ({
   );
 
   return (
-    <div className="mb-5 flex flex-col gap-4 border border-border p-4">
+    <div className="mb-5 flex flex-col gap-4 rounded-md border border-border p-4">
       <div className="flex flex-wrap items-start gap-4">
         {field("Ticker Symbol", <Input value={ticker} onChange={(e) => setTicker(e.target.value)} placeholder="AAPL" />)}
         {field(
@@ -145,7 +145,7 @@ const BacktestTopBar = ({
       <div className="border-t border-border pt-4">
         <button
           onClick={() => setParamsOpen((o) => !o)}
-          className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+          className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground"
         >
           <span>{paramsOpen ? "▾" : "▸"}</span>
           {STRATEGY_PARAMS_LABEL[strategy] ?? "Pairs Trading Settings"}

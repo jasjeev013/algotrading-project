@@ -16,7 +16,7 @@ const BacktestStrategyParamsFields = ({ strategy, params, onChange }: BacktestSt
 
   const field = (label: string, children: ReactNode, hint?: string) => (
     <div className="w-[150px]">
-      <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground">
+      <label className="mb-1.5 block text-[12.5px] font-medium text-muted-foreground">
         {label}
       </label>
       {children}
