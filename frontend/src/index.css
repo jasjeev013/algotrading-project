@@ -1,3 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-background: #ffffff;
+  --color-foreground: #1a1d23;
+  --color-border: #e3e5e9;
+  --color-muted: #f6f7f8;
+  --color-muted-foreground: #6b7280;
+  --color-accent: #2563eb;
+  --color-positive: #0f8a4c;
+  --color-negative: #c0392b;
+  --color-destructive: #c0392b;
+  --color-destructive-foreground: #ffffff;
+  --radius-md: 6px;
+}
+
 * {
   box-sizing: border-box;
 }
