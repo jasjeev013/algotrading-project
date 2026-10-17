@@ -47,11 +47,11 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }: TradingChartP
     const chart = createChart(container, {
       width: container.clientWidth,
       height: 400,
-      layout: { background: { color: "transparent" }, textColor: "#5c574c" },
+      layout: { background: { color: "#f4f2ee" }, textColor: "#5c574c" },
       grid: { vertLines: { color: "#e7e3da" }, horzLines: { color: "#e7e3da" } },
       crosshair: { mode: CrosshairMode.Normal },
-      timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#111111" },
-      rightPriceScale: { borderColor: "#111111" },
+      timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#ddd8cc" },
+      rightPriceScale: { borderColor: "#ddd8cc" },
     });
     lineSeriesRefs.current = {};
 
@@ -172,12 +172,12 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }: TradingChartP
         <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#5c574c", marginLeft: "auto" }}>
           Chart type
           <select value={chartType} onChange={(e) => setChartType(e.target.value)}
-            style={{ background: "#f4f2ee", color: "#111111", border: "2px solid #111111", padding: "2px 6px", fontSize: "12px" }}>
+            style={{ background: "#f4f2ee", color: "#111111", border: "1px solid #ddd8cc", padding: "2px 6px", fontSize: "12px" }}>
             {CHART_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
         </label>
       </div>
-      <div ref={chartContainerRef} style={{ position: "relative", width: "100%", border: "2px solid #111111" }} />
+      <div ref={chartContainerRef} style={{ position: "relative", width: "100%", background: "#f4f2ee", border: "1px solid #ddd8cc" }} />
     </div>
   );
 };

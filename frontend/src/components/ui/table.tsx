@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 const Table = React.forwardRef<HTMLTableElement, React.TableHTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
-    <div className="w-full overflow-x-auto border-2 border-foreground">
+    <div className="w-full overflow-x-auto border border-border">
       <table ref={ref} className={cn("w-full border-collapse text-left text-sm", className)} {...props} />
     </div>
   ),
@@ -14,7 +14,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("border-b-2 border-foreground bg-muted", className)} {...props} />
+  <thead ref={ref} className={cn("border-b border-border bg-muted", className)} {...props} />
 ));
 TableHeader.displayName = "TableHeader";
 
@@ -28,7 +28,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
   ({ className, ...props }, ref) => (
     <tr
       ref={ref}
-      className={cn("border-b border-foreground/30 last:border-0 hover:bg-muted/50", className)}
+      className={cn("border-b border-border last:border-0 hover:bg-muted/50", className)}
       {...props}
     />
   ),
@@ -39,7 +39,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
   ({ className, ...props }, ref) => (
     <th
       ref={ref}
-      className={cn("px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground", className)}
+      className={cn("px-3 py-2 text-[11px] font-semibold text-muted-foreground", className)}
       {...props}
     />
   ),

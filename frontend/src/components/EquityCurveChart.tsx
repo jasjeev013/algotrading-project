@@ -19,7 +19,7 @@ const EquityCurveChart = ({ equityCurve }: EquityCurveChartProps) => {
       width: container.clientWidth,
       height: 260,
       layout: {
-        background: { color: "transparent" },
+        background: { color: "#f4f2ee" },
         textColor: "#5c574c",
       },
       grid: {
@@ -32,10 +32,10 @@ const EquityCurveChart = ({ equityCurve }: EquityCurveChartProps) => {
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
-        borderColor: "#111111",
+        borderColor: "#ddd8cc",
       },
       rightPriceScale: {
-        borderColor: "#111111",
+        borderColor: "#ddd8cc",
       },
     });
 
@@ -70,7 +70,8 @@ const EquityCurveChart = ({ equityCurve }: EquityCurveChartProps) => {
       style={{
         position: "relative",
         width: "100%",
-        border: "2px solid #111111",
+        background: "#f4f2ee",
+        border: "1px solid #ddd8cc",
       }}
     />
   );

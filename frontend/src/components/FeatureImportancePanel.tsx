@@ -15,7 +15,7 @@ const FeatureImportancePanel = ({ featureImportance }: FeatureImportancePanelPro
         Relative contribution of each input feature to the Random Forest's predictions (averaged across
         walk-forward windows, if used).
       </p>
-      <div className="flex flex-col gap-2 border-2 border-foreground p-3.5">
+      <div className="flex flex-col gap-2 border border-border p-3.5">
         {entries.map(([name, value]) => (
           <div key={name} className="grid grid-cols-[110px_1fr_48px] items-center gap-2.5">
             <span className="text-[12px] text-muted-foreground">{name}</span>

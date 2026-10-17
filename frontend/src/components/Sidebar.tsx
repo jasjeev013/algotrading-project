@@ -128,8 +128,8 @@ const Sidebar = ({ mode, onSelect }: SidebarProps) => {
   }, []);
 
   return (
-    <div className="flex h-full w-56 flex-shrink-0 flex-col border-r-2 border-foreground bg-background">
-      <div className="border-b-2 border-foreground px-4 py-4">
+    <div className="flex h-full w-56 flex-shrink-0 flex-col border-r border-border bg-background text-foreground">
+      <div className="border-b border-border px-4 py-4">
         <div className="text-lg font-bold tracking-tight">QUANTDASH</div>
         <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Algorithmic Trading</div>
       </div>
@@ -152,7 +152,7 @@ const Sidebar = ({ mode, onSelect }: SidebarProps) => {
         ))}
       </nav>
 
-      <div className="border-t-2 border-foreground px-4 py-3 text-[11px] text-muted-foreground">
+      <div className="border-t border-border px-4 py-3 text-[11px] text-muted-foreground">
         <div className="flex items-center gap-2 py-1">
           <span
             className={cn(

@@ -61,7 +61,7 @@ const RegimeHeader = () => {
   const changeClass = regime.spy_daily_change_pct >= 0 ? "text-positive" : "text-negative";
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-6 border-b-2 border-foreground pb-3 text-[12.5px]">
+    <div className="mb-4 flex flex-wrap items-center gap-6 border-b border-border pb-3 text-[12.5px]">
       <div className="flex items-baseline gap-2">
         <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">SPY</span>
         <span className="font-bold tabular-nums">${regime.spy_price.toFixed(2)}</span>
