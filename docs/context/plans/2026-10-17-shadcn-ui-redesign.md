@@ -1,18 +1,20 @@
-# QuantDash UI Redesign: shadcn/ui + Brutalist/Light Theme (Phase 1: Shell + Backtest Page)
+# QuantDash UI Redesign: shadcn/ui + Sober (screener.in-style) Theme (Phase 1: Shell + Backtest Page)
+
+> **Revision note (post-implementation):** the original brainstormed direction below ("brutalist/light": thick black borders, zero radius, uppercase tracked labels) shipped but still read as templated/AI-generated once seen live. Live feedback asked to replicate screener.in's actual look instead. The **Decisions** section has been updated in place to the direction that actually shipped; the superseded brutalist decisions are struck through for history.
 
 ## Context
 
 The frontend (`frontend/CLAUDE.md`) has no UI component library today — React 19 + hand-rolled CSS (`App.css`), a dark theme with a hover-expanding icon nav rail, topbar, and card-grid metrics. Visually it follows the common "AI-generated dashboard" template (dark near-black background, single flat green accent, borders-only panels, uniform small border-radius, system-ui/Inter type) closely enough to read as templated rather than designed, even though it was hand-coded.
 
-Goal: adopt shadcn/ui (Radix primitives + Tailwind) as the component layer, restyled to a **brutalist/light** direction that is visually distinct from both the current theme and from shadcn's own default look (which has become its own recognizable "AI tool" template).
+Goal: adopt shadcn-style component primitives (plain Tailwind + `cva`, not Radix — see Stack changes) as the component layer, restyled to a **sober, screener.in-inspired** direction that is visually distinct from both the current theme and from shadcn's own default look (which has become its own recognizable "AI tool" template) — and, per live feedback, distinct from a generic "brutalist" template too.
 
-## Decisions (from brainstorming)
+## Decisions (from brainstorming, then revised against live feedback)
 
-- **Visual direction:** Brutalist/light — off-white surface, thick (2px) black rules, zero border-radius, bold type carries hierarchy instead of color/shadow.
-- **Layout shell:** Persistent, always-visible text-labeled sidebar (not a hover-to-expand icon rail). No separate topbar/status strip — brand mark sits inline with content.
-- **Typography:** Grotesk/Helvetica-Now-style sans (e.g. a geometric grotesk such as Space Grotesk or similar) for both headings and body; no serif, no monospace-everywhere, no condensed display face.
-- **Color policy:** Monochrome (black/white/gray) base. Color appears **only** for semantic meaning — profit/loss (green/red), live/offline status, pass/fail — never decoratively.
-- **Component source:** shadcn/ui CLI, which generates component source directly into the repo (`src/components/ui/`) rather than installing a opaque pre-styled package — we then theme those generated primitives to the brutalist/light tokens instead of leaving shadcn's default rounded/shadowed look.
+- ~~**Visual direction:** Brutalist/light — off-white surface, thick (2px) black rules, zero border-radius, bold type carries hierarchy instead of color/shadow.~~ **Revised: Sober/screener.in** — checked screener.in's actual stylesheet (`cdn-static.screener.in/css/custom.*.css`) rather than guessing: pure white background (`#ffffff`), thin 1px light-gray borders (`--color-border: #e3e5e9`), **subtle border-radius (6px)** — screener.in is not zero-radius — and normal-case, medium-weight type instead of uppercase/tracked "shouting" labels.
+- **Layout shell:** Persistent, always-visible text-labeled sidebar (not a hover-to-expand icon rail). No separate topbar/status strip — brand mark sits inline with content. (Unchanged.)
+- ~~**Typography:** Grotesk/Helvetica-Now-style sans (e.g. a geometric grotesk such as Space Grotesk or similar) for both headings and body; no serif, no monospace-everywhere, no condensed display face.~~ **Revised: Inter** — screener.in's actual font, confirmed via its stylesheet links.
+- **Color policy:** Monochrome (black/white/gray) base, color only for semantic meaning (profit/loss, live/offline status) — unchanged, but a single **accent blue** (`--color-accent: #2563eb`) was added for interactive affordances (links, primary buttons, focus rings, active nav state), matching screener.in's use of a link/accent color rather than staying purely monochrome for interactive elements.
+- **Component source:** Hand-written shadcn-style primitives in `src/components/ui/` (`cva` + `cn`, no Radix — see the implementation plan's "Deliberate simplification" note) — unchanged, just themed to the revised tokens above instead of the brutalist ones.
 
 ## Stack changes
 
@@ -23,12 +25,12 @@ Add (frontend only, no backend changes):
 - `@radix-ui/*` packages as needed per shadcn component added (installed automatically by the shadcn CLI per-component).
 - shadcn CLI (`shadcn`) run ad hoc via `npx`, not a persistent devDependency requirement beyond what it scaffolds.
 
-Theme tokens (Tailwind config + CSS variables, replacing the `:root` variables currently in `App.css`):
-- Background: off-white (e.g. `#f4f2ee`), text near-black (`#111`).
-- Border: solid 2px black (`#111`) on all bordered surfaces; **border-radius: 0** globally (override shadcn's default rounded corners in the theme, not per-component).
-- Accent: none decorative. Semantic only — green for profit/positive, red for loss/negative, a neutral gray for disabled/muted. Live-trading status keeps a status color (green=live/healthy, red=offline/error) consistent with the P&L semantics rather than introducing a separate hue.
-- Type: a grotesk sans for everything (headings, labels, body); numeric values keep `font-variant-numeric: tabular-nums` as today for alignment in metric cards/tables.
-- Shadows: none — brutalist panels are separated by borders, not elevation.
+Theme tokens (`@theme` block in `src/index.css`, replacing the `:root` variables currently in `App.css` for the Backtest-scoped parts of the app):
+- Background: pure white (`#ffffff`), text near-black (`#1a1d23`).
+- Border: `--color-border: #e3e5e9` (light gray), 1px, with `rounded-md` (6px) on bordered surfaces — not zero-radius.
+- Accent: `--color-accent: #2563eb` (blue) for interactive elements (primary button, focus rings, active nav). Profit/loss and status still semantic green/red only.
+- Type: Inter for everything (headings, labels, body); numeric values keep `font-variant-numeric: tabular-nums` as today for alignment in metric cards/tables.
+- Shadows: minimal — a subtle `shadow-md` on floating elements like tooltips, otherwise separated by thin borders.
 
 ## Scope: what changes vs. what stays
 
