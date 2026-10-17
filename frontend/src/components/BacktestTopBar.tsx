@@ -1,4 +1,9 @@
-import StrategyParamsFields from "./StrategyParamsFields";
+import { useState } from "react";
+import type { ReactNode } from "react";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import BacktestStrategyParamsFields from "./BacktestStrategyParamsFields";
 import type { useStrategyConfig } from "../hooks/useStrategyConfig";
 
 type BacktestTopBarProps = Pick<
@@ -26,9 +31,14 @@ type BacktestTopBarProps = Pick<
   onRun: () => void;
 };
 
-// Horizontal control bar for the Strategy Explorer tab — same fields as the
-// old BacktestSidebar, laid out as a wrapping row above the results instead
-// of a fixed-width column on the left.
+const STRATEGY_PARAMS_LABEL: Record<string, string> = {
+  BuyHold: "Buy & Hold Settings",
+  SMA: "SMA Crossover Settings",
+  Bollinger: "Bollinger Bands Settings",
+  ML: "Machine Learning Settings",
+};
+
+// Horizontal control bar for the Strategy Explorer tab.
 const BacktestTopBar = ({
   ticker,
   setTicker,
@@ -51,66 +61,49 @@ const BacktestTopBar = ({
   loading,
   onRun,
 }: BacktestTopBarProps) => {
+  const [paramsOpen, setParamsOpen] = useState(true);
+  const field = (label: string, children: ReactNode, width = "w-[130px]") => (
+    <div className={width}>
+      <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+
   return (
-    <div className="backtest-topbar">
-      <div className="backtest-topbar-row">
-        <div className="input-group topbar-field-sm">
-          <label>Ticker Symbol</label>
-          <input
-            type="text"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value)}
-            placeholder="AAPL"
-          />
-        </div>
+    <div className="mb-5 flex flex-col gap-4 border-2 border-foreground p-4">
+      <div className="flex flex-wrap items-start gap-4">
+        {field("Ticker Symbol", <Input value={ticker} onChange={(e) => setTicker(e.target.value)} placeholder="AAPL" />)}
+        {field("Start Date", <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />)}
+        {field("End Date", <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />)}
 
-        <div className="input-group topbar-field-sm">
-          <label>Start Date</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-        </div>
+        {field(
+          "Data Interval",
+          <>
+            <Select value={dataInterval} onChange={(e) => setDataInterval(e.target.value)}>
+              <optgroup label="Daily+">
+                <option value="1d">1 Day</option>
+                <option value="1wk">1 Week</option>
+                <option value="1mo">1 Month</option>
+              </optgroup>
+              <optgroup label="Intraday (max 60 days history)">
+                <option value="5m">5 Minutes</option>
+                <option value="15m">15 Minutes</option>
+              </optgroup>
+            </Select>
+            {["5m", "15m"].includes(dataInterval) && (
+              <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+                Yahoo Finance only provides ~60 days of intraday history.
+              </p>
+            )}
+          </>,
+          "w-[170px]",
+        )}
 
-        <div className="input-group topbar-field-sm">
-          <label>End Date</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
-        </div>
-
-        <div className="input-group topbar-field-md">
-          <label>Data Interval</label>
-          <select
-            value={dataInterval}
-            onChange={(e) => setDataInterval(e.target.value)}
-          >
-            <optgroup label="Daily+">
-              <option value="1d">1 Day</option>
-              <option value="1wk">1 Week</option>
-              <option value="1mo">1 Month</option>
-            </optgroup>
-            <optgroup label="Intraday (max 60 days history)">
-              <option value="5m">5 Minutes</option>
-              <option value="15m">15 Minutes</option>
-            </optgroup>
-          </select>
-          {["5m", "15m"].includes(dataInterval) && (
-            <p className="field-hint">
-              Yahoo Finance only provides ~60 days of intraday history.
-            </p>
-          )}
-        </div>
-
-        <div className="input-group topbar-field-md">
-          <label>Model</label>
-          <select
-            value={strategy}
-            onChange={(e) => setStrategy(e.target.value)}
-          >
+        {field(
+          "Model",
+          <Select value={strategy} onChange={(e) => setStrategy(e.target.value)}>
             <option value="BuyHold">Buy &amp; Hold</option>
             <option value="SMA">SMA Crossover</option>
             <option value="EMA">EMA Crossover</option>
@@ -121,72 +114,52 @@ const BacktestTopBar = ({
             <option value="NDayMom">Momentum (N-Day)</option>
             <option value="ML">Machine Learning (RF)</option>
             <option value="StatArb">Pairs Trading (StatArb)</option>
-          </select>
-        </div>
+          </Select>,
+          "w-[170px]",
+        )}
 
-        <div className="input-group topbar-field-md">
-          <label>Engine</label>
-          <select value={engine} onChange={(e) => setEngine(e.target.value as "iterative" | "vectorized")}>
+        {field(
+          "Engine",
+          <Select value={engine} onChange={(e) => setEngine(e.target.value as "iterative" | "vectorized")}>
             <option value="iterative">Fast Iterative</option>
             <option value="vectorized">Vectorized</option>
-          </select>
-        </div>
+          </Select>,
+          "w-[170px]",
+        )}
 
-        <div className="input-group topbar-field-sm">
-          <label>Initial Capital ($)</label>
-          <input
-            type="number"
-            value={capital}
-            onChange={(e) => setCapital(e.target.value)}
-          />
-        </div>
+        {field("Initial Capital ($)", <Input type="number" value={capital} onChange={(e) => setCapital(e.target.value)} />)}
 
-        <button
-          className="run-btn topbar-run-btn"
-          onClick={onRun}
-          disabled={loading}
-        >
+        <Button className="ml-auto mt-[22px]" onClick={onRun} disabled={loading}>
           {loading ? "Running Test…" : "Run Backtest"}
-        </button>
+        </Button>
       </div>
 
-      <details className="backtest-topbar-params-row" open>
-        <summary className="topbar-params-label">
-          {strategy === "BuyHold"
-            ? "Buy & Hold Settings"
-            : strategy === "SMA"
-              ? "SMA Crossover Settings"
-              : strategy === "Bollinger"
-                ? "Bollinger Bands Settings"
-                : strategy === "ML"
-                  ? "Machine Learning Settings"
-                  : "Pairs Trading Settings"}
-        </summary>
+      <div className="border-t-2 border-foreground pt-4">
+        <button
+          onClick={() => setParamsOpen((o) => !o)}
+          className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+        >
+          <span>{paramsOpen ? "▾" : "▸"}</span>
+          {STRATEGY_PARAMS_LABEL[strategy] ?? "Pairs Trading Settings"}
+        </button>
 
-        <div className="backtest-topbar-params-content">
-          {strategy === "StatArb" && (
-            <div className="input-group topbar-field-sm">
-              <label>Pair Ticker</label>
-              <input
-                type="text"
-                value={pairTicker}
-                onChange={(e) => setPairTicker(e.target.value)}
-                placeholder="MSFT"
-              />
-              <p className="field-hint">
-                Second leg of the pair — spread traded against Ticker
-                Symbol.
-              </p>
-            </div>
-          )}
+        {paramsOpen && (
+          <div className="mt-3 flex flex-wrap items-start gap-4">
+            {strategy === "StatArb" &&
+              field(
+                "Pair Ticker",
+                <>
+                  <Input value={pairTicker} onChange={(e) => setPairTicker(e.target.value)} placeholder="MSFT" />
+                  <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+                    Second leg of the pair — spread traded against Ticker Symbol.
+                  </p>
+                </>,
+              )}
 
-          <StrategyParamsFields
-            strategy={strategy}
-            params={strategyParams}
-            onChange={setStrategyParams}
-          />
-        </div>
-      </details>
+            <BacktestStrategyParamsFields strategy={strategy} params={strategyParams} onChange={setStrategyParams} />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
