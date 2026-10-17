@@ -1,7 +1,6 @@
 import { useState } from "react";
-import TopBar from "./components/TopBar";
+import Sidebar from "./components/Sidebar";
 import RegimeHeader from "./components/RegimeHeader";
-import NavRail from "./components/NavRail";
 import LiveSidebar from "./components/LiveSidebar";
 import AdvancedSettingsSidebar from "./components/AdvancedSettingsSidebar";
 import HistorySidebar from "./components/HistorySidebar";
@@ -44,61 +43,58 @@ function App() {
   };
 
   return (
-    <div className="app-shell">
-      <TopBar mode={mode} />
-      <RegimeHeader />
+    <div className="flex min-h-svh w-full bg-background text-foreground">
+      <Sidebar mode={mode} onSelect={handleModeChange} />
 
-      <div className="dashboard-container">
-        <NavRail mode={mode} onSelect={handleModeChange} />
-
-        {/* SIDEBAR (Strategy Explorer and Walk-Forward use an in-content top bar instead — see BacktestPage / WalkForwardPage) */}
-        {mode !== "backtest" && mode !== "walkforward" && (
-          <div className="sidebar">
-            {mode === "live" ? (
-              <LiveSidebar
-                strategy={live.strategy}
-                setStrategy={live.setStrategy}
-                instrument={live.instrument}
-                setInstrument={live.setInstrument}
-                account={live.account}
-                status={live.status}
-                onStatusChange={live.setStatus}
-                startPayload={{
-                  interval_seconds: parseInt(String(live.pollSeconds), 10),
-                  granularity: live.granularity,
-                  candle_count: parseInt(String(live.candleCount), 10),
-                  trade_units: parseInt(String(live.tradeUnits), 10),
-                  min_account_balance: parseFloat(String(live.minBalance)),
-                  max_open_positions: parseInt(String(live.maxPositions), 10),
-                }}
-              />
-            ) : mode === "settings" ? (
-              <AdvancedSettingsSidebar />
-            ) : mode === "about" ? null : (
-              <HistorySidebar
-                onRefresh={history.fetchHistory}
-                loading={history.loading}
-              />
-            )}
-          </div>
-        )}
-
-        {/* MAIN CONTENT */}
-        <div className="main-content">
-          {mode === "backtest" ? (
-            <BacktestPage config={config} backtest={backtest} />
-          ) : mode === "walkforward" ? (
-            <WalkForwardPage config={config} walkForward={walkForward} />
-          ) : mode === "live" ? (
-            <LivePage live={live} />
+      {/* Secondary sidebar for tabs that use one (Strategy Explorer and
+          Walk-Forward use an in-content top bar instead). Unmigrated —
+          keeps the old .sidebar-section-title / dark-theme styling its
+          children already rely on. */}
+      {mode !== "backtest" && mode !== "walkforward" && (
+        <div className="w-[300px] flex-shrink-0 overflow-y-auto border-r-2 border-foreground bg-background p-[18px]">
+          {mode === "live" ? (
+            <LiveSidebar
+              strategy={live.strategy}
+              setStrategy={live.setStrategy}
+              instrument={live.instrument}
+              setInstrument={live.setInstrument}
+              account={live.account}
+              status={live.status}
+              onStatusChange={live.setStatus}
+              startPayload={{
+                interval_seconds: parseInt(String(live.pollSeconds), 10),
+                granularity: live.granularity,
+                candle_count: parseInt(String(live.candleCount), 10),
+                trade_units: parseInt(String(live.tradeUnits), 10),
+                min_account_balance: parseFloat(String(live.minBalance)),
+                max_open_positions: parseInt(String(live.maxPositions), 10),
+              }}
+            />
           ) : mode === "settings" ? (
-            <SettingsPage config={config} live={live} />
-          ) : mode === "about" ? (
-            <AboutPage />
-          ) : (
-            <HistoryPage history={history} />
+            <AdvancedSettingsSidebar />
+          ) : mode === "about" ? null : (
+            <HistorySidebar onRefresh={history.fetchHistory} loading={history.loading} />
           )}
         </div>
+      )}
+
+      {/* MAIN CONTENT */}
+      <div className="flex-1 overflow-y-auto px-7 py-6">
+        <RegimeHeader />
+
+        {mode === "backtest" ? (
+          <BacktestPage config={config} backtest={backtest} />
+        ) : mode === "walkforward" ? (
+          <WalkForwardPage config={config} walkForward={walkForward} />
+        ) : mode === "live" ? (
+          <LivePage live={live} />
+        ) : mode === "settings" ? (
+          <SettingsPage config={config} live={live} />
+        ) : mode === "about" ? (
+          <AboutPage />
+        ) : (
+          <HistoryPage history={history} />
+        )}
       </div>
     </div>
   );
