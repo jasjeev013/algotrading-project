@@ -12,8 +12,6 @@ interface BacktestPageProps {
   backtest: ReturnType<typeof useBacktestRun>;
 }
 
-// Strategy Explorer tab: the in-content top bar plus the single-run
-// results (metrics, price/equity charts, feature importance, trade log).
 const BacktestPage = ({ config, backtest }: BacktestPageProps) => {
   const { loading, error, results, runBacktest } = backtest;
 
@@ -42,17 +40,17 @@ const BacktestPage = ({ config, backtest }: BacktestPageProps) => {
         onRun={runBacktest}
       />
 
-      <h1>Backtest Results</h1>
-      <p className="subtitle">
-        Historical simulation over the selected date range.
-      </p>
+      <h1 className="mb-1 text-[17px] font-bold">Backtest Results</h1>
+      <p className="mb-5 text-[12.5px] text-muted-foreground">Historical simulation over the selected date range.</p>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="mb-4 border-2 border-negative px-3 py-2.5 text-[13px] text-negative">{error}</div>
+      )}
 
       {loading && (
-        <div className="spinner-wrap">
-          <div className="spinner"></div>
-          <p>Running Backtest Engine…</p>
+        <div className="mt-16 flex flex-col items-center gap-3">
+          <div className="h-6 w-6 animate-spin border-2 border-foreground border-l-transparent" />
+          <p className="text-[12.5px] text-muted-foreground">Running Backtest Engine…</p>
         </div>
       )}
 
@@ -61,11 +59,10 @@ const BacktestPage = ({ config, backtest }: BacktestPageProps) => {
           <MetricsGrid metrics={results.metrics} />
 
           {results.price_data && (
-            <div className="section-block">
-              <h2>Price Chart & Executions</h2>
-              <p className="section-desc">
-                Green arrows = Buy, Red arrows = Sell Short, Orange arrows =
-                Exit Position.
+            <div className="mb-6">
+              <h2 className="mb-1 text-sm font-bold uppercase tracking-wide">Price Chart & Executions</h2>
+              <p className="mb-2.5 text-[12px] text-muted-foreground">
+                Green arrows = Buy, Red arrows = Sell Short, Orange arrows = Exit Position.
               </p>
               <TradingChart
                 priceData={results.price_data}
@@ -76,33 +73,29 @@ const BacktestPage = ({ config, backtest }: BacktestPageProps) => {
           )}
 
           {results.equity_curve && (
-            <div className="section-block">
-              <h2>Equity Curve</h2>
-              <p className="section-desc">
-                Portfolio value over the backtest window.
-              </p>
+            <div className="mb-6">
+              <h2 className="mb-1 text-sm font-bold uppercase tracking-wide">Equity Curve</h2>
+              <p className="mb-2.5 text-[12px] text-muted-foreground">Portfolio value over the backtest window.</p>
               <EquityCurveChart equityCurve={results.equity_curve} />
             </div>
           )}
 
           {!results.price_data && (
-            <p className="field-hint">
-              Loaded from saved history — price and equity charts aren't
-              stored for past runs, only metrics and the trade log.
+            <p className="mb-5 text-[11.5px] leading-relaxed text-muted-foreground">
+              Loaded from saved history — price and equity charts aren't stored for past runs, only metrics and
+              the trade log.
             </p>
           )}
 
-          <FeatureImportancePanel
-            featureImportance={results.feature_importance}
-          />
+          <FeatureImportancePanel featureImportance={results.feature_importance} />
 
           <TradeLogTable tradeLog={results.trade_log} />
         </>
       )}
 
       {!results && !loading && !error && (
-        <div className="empty-state">
-          <div className="empty-icon">📈</div>
+        <div className="mt-16 text-center text-[13.5px] text-muted-foreground">
+          <div className="mb-2 text-2xl opacity-40">📈</div>
           Configure your parameters above and click "Run Backtest" to begin.
         </div>
       )}
