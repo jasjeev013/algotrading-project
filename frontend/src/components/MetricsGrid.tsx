@@ -8,7 +8,7 @@ interface MetricsGridProps {
 // The six headline metrics, shared by the Backtest and Walk-Forward
 // results panes.
 const MetricsGrid = ({ metrics }: MetricsGridProps) => (
-  <div className="metrics-grid">
+  <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-[-2px]">
     <MetricCard
       title="Total Return"
       value={metrics.total_return_pct}

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { cn } from "@/lib/utils";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface MetricCardProps {
   title: string;
@@ -18,78 +20,74 @@ const MetricCard = ({ title, value, suffix = "", isColorCoded = false, info }: M
 
   let colorClass = "";
   if (isColorCoded && hasValue) {
-    colorClass = value >= 0 ? "positive" : "negative";
+    colorClass = value >= 0 ? "text-positive" : "text-negative";
   }
 
-  // The metrics grid clips overflow (for its rounded corners / hairline
-  // borders), so the tooltip can't just be positioned relative to the icon —
-  // it gets cut off. Instead we portal it to <body> and position it with
-  // fixed coordinates from the icon's own bounding box.
   const openTooltip = () => {
     if (wrapperRef.current) {
       const rect = wrapperRef.current.getBoundingClientRect();
-      setCoords({
-        top: rect.top,
-        left: rect.left + rect.width / 2,
-      });
+      setCoords({ top: rect.top, left: rect.left + rect.width / 2 });
     }
     setShowInfo(true);
   };
-
   const closeTooltip = () => setShowInfo(false);
 
-  // Close on outside click so a tap on mobile doesn't leave the tooltip stuck open.
   useEffect(() => {
     if (!showInfo) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        closeTooltip();
-      }
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) closeTooltip();
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showInfo]);
 
   return (
-    <div className="metric-card">
-      <h3>
-        {title}
-        {info && (
-          <span
-            className="metric-info"
-            ref={wrapperRef}
-            onMouseEnter={openTooltip}
-            onMouseLeave={closeTooltip}
-            onClick={() => (showInfo ? closeTooltip() : openTooltip())}
-          >
-            <span className="metric-info-icon" aria-label={`About ${title}`}>
-              i
+    <Card>
+      <CardHeader className="flex items-center gap-1.5 border-b-0 pb-0">
+        <CardTitle className="flex items-center gap-1.5">
+          {title}
+          {info && (
+            <span
+              className="relative inline-flex"
+              ref={wrapperRef}
+              onMouseEnter={openTooltip}
+              onMouseLeave={closeTooltip}
+              onClick={() => (showInfo ? closeTooltip() : openTooltip())}
+            >
+              <span
+                className="flex h-3.5 w-3.5 cursor-help items-center justify-center rounded-full border border-muted-foreground text-[9px] font-bold not-italic text-muted-foreground"
+                aria-label={`About ${title}`}
+              >
+                i
+              </span>
+              {showInfo &&
+                coords &&
+                createPortal(
+                  <span
+                    className="fixed z-[1000] w-[200px] -translate-x-1/2 -translate-y-[calc(100%+8px)] border-2 border-foreground bg-background p-2 text-[11px] font-normal leading-relaxed text-foreground shadow-none"
+                    style={{ top: coords.top, left: coords.left }}
+                  >
+                    {info}
+                  </span>,
+                  document.body,
+                )}
             </span>
-            {showInfo &&
-              coords &&
-              createPortal(
-                <span
-                  className="metric-info-tooltip"
-                  style={{ top: coords.top, left: coords.left }}
-                >
-                  {info}
-                </span>,
-                document.body
-              )}
-          </span>
-        )}
-      </h3>
-      <div className={`value ${colorClass}`}>
-        {hasValue ? (
-          <>
-            {value}
-            {suffix}
-          </>
-        ) : (
-          "N/A"
-        )}
-      </div>
-    </div>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-2">
+        <div className={cn("text-xl font-bold tabular-nums", colorClass)}>
+          {hasValue ? (
+            <>
+              {value}
+              {suffix}
+            </>
+          ) : (
+            "N/A"
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
