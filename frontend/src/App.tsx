@@ -18,8 +18,7 @@ import { useWalkForwardRun } from "./hooks/useWalkForwardRun";
 import { useLiveTrading } from "./hooks/useLiveTrading";
 import { useHistory } from "./hooks/useHistory";
 import type { Mode } from "./types/mode";
-
-import "./App.css";
+import { cn } from "@/lib/utils";
 
 function App() {
   // --- MODE ---
@@ -42,16 +41,26 @@ function App() {
     }
   };
 
+  // Only the Strategy Explorer tab (and the shell around it) uses the new
+  // brutalist/light theme. Every other tab keeps its original dark theme
+  // (old App.css rules, unmigrated — see the plan's Phase 2 scope), so the
+  // light background/text/font/color-scheme are applied here, not on the
+  // shared outer shell.
+  const isBacktest = mode === "backtest";
+
   return (
-    <div className="flex min-h-svh w-full bg-background text-foreground">
+    <div className="flex h-svh w-full">
       <Sidebar mode={mode} onSelect={handleModeChange} />
 
       {/* Secondary sidebar for tabs that use one (Strategy Explorer and
           Walk-Forward use an in-content top bar instead). Unmigrated —
           keeps the old .sidebar-section-title / dark-theme styling its
-          children already rely on. */}
+          children already rely on, via the inline dark styling below. */}
       {mode !== "backtest" && mode !== "walkforward" && (
-        <div className="w-[300px] flex-shrink-0 overflow-y-auto border-r-2 border-foreground bg-background p-[18px]">
+        <div
+          className="w-[300px] flex-shrink-0 overflow-y-auto p-[18px]"
+          style={{ background: "var(--bg-1)", borderRight: "1px solid var(--border)", color: "var(--text-primary)" }}
+        >
           {mode === "live" ? (
             <LiveSidebar
               strategy={live.strategy}
@@ -79,7 +88,13 @@ function App() {
       )}
 
       {/* MAIN CONTENT */}
-      <div className="flex-1 overflow-y-auto px-7 py-6">
+      <div
+        className={cn(
+          "main-content min-w-0 flex-1 overflow-y-auto",
+          isBacktest && "bg-background px-7 py-6 font-sans text-foreground [color-scheme:light]",
+        )}
+        style={isBacktest ? undefined : { background: "var(--bg-0)", color: "var(--text-primary)" }}
+      >
         <RegimeHeader />
 
         {mode === "backtest" ? (

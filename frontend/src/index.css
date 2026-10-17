@@ -1,4 +1,11 @@
+/* Pre-declare layer order so legacy (old App.css, unlayered-by-default)
+   sits below Tailwind's own layers — otherwise an unlayered stylesheet
+   would beat every Tailwind utility regardless of specificity, since
+   CSS cascade layers rank an unlayered declaration above ALL layers. */
+@layer theme, base, legacy, components, utilities;
+
 @import "tailwindcss";
+@import "./App.css" layer(legacy);
 
 @theme {
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;

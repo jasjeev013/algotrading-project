@@ -83,6 +83,35 @@ body {
   background: var(--border-hover);
 }
 
+/* Still used by LivePanel.tsx (out of scope for this phase) — kept when
+   the rest of the old topbar/status-strip block was removed. */
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.status-dot.online {
+  background: var(--accent);
+}
+
+.status-dot.offline {
+  background: var(--danger);
+}
+
+.status-dot.warning {
+  background: #f59e0b;
+}
+
 .sidebar-section-title {
   font-size: 11px;
   text-transform: uppercase;
