@@ -5,6 +5,7 @@ import {
 } from "lightweight-charts";
 import type { ISeriesApi, ISeriesMarkersPluginApi, LineWidth, SeriesMarker, Time } from "lightweight-charts";
 import type { IndicatorSpec, PricePoint, Trade } from "../types/backtest";
+import { toChartTime } from "../utils/chartTime";
 
 const CHART_TYPES = [
   { value: "candlestick", label: "Candles" },
@@ -46,11 +47,11 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }: TradingChartP
     const chart = createChart(container, {
       width: container.clientWidth,
       height: 400,
-      layout: { background: { color: "transparent" }, textColor: "#92a0b8" },
-      grid: { vertLines: { color: "#1b212c" }, horzLines: { color: "#1b212c" } },
+      layout: { background: { color: "transparent" }, textColor: "#5c574c" },
+      grid: { vertLines: { color: "#e7e3da" }, horzLines: { color: "#e7e3da" } },
       crosshair: { mode: CrosshairMode.Normal },
-      timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#232a38" },
-      rightPriceScale: { borderColor: "#232a38" },
+      timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#111111" },
+      rightPriceScale: { borderColor: "#111111" },
     });
     lineSeriesRefs.current = {};
 
@@ -59,9 +60,9 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }: TradingChartP
       priceSeries = chart.addSeries(BarSeries, {
         upColor: "#4CAF50", downColor: "#f44336",
       });
-      priceSeries.setData(priceData.map((d) => ({ ...d, time: d.time as unknown as Time })));
+      priceSeries.setData(priceData.map((d) => ({ ...d, time: toChartTime(d.time) })));
     } else if (chartType === "line" || chartType === "area") {
-      const closeData = priceData.map((d) => ({ time: d.time as unknown as Time, value: d.close }));
+      const closeData = priceData.map((d) => ({ time: toChartTime(d.time), value: d.close }));
       if (chartType === "area") {
         priceSeries = chart.addSeries(AreaSeries, {
           lineColor: "#4CAF50", topColor: "rgba(76, 175, 80, 0.4)", bottomColor: "rgba(76, 175, 80, 0.02)",
@@ -76,7 +77,7 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }: TradingChartP
         upColor: "#4CAF50", downColor: "#f44336",
         borderVisible: false, wickUpColor: "#4CAF50", wickDownColor: "#f44336",
       });
-      priceSeries.setData(priceData.map((d) => ({ ...d, time: d.time as unknown as Time })));
+      priceSeries.setData(priceData.map((d) => ({ ...d, time: toChartTime(d.time) })));
     }
 
     for (const [key, spec] of Object.entries(indicatorData)) {
@@ -104,21 +105,21 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }: TradingChartP
           visible: false,
         });
       }
-      ls.setData(spec.data.map((d) => ({ time: d.time as unknown as Time, value: d.value })));
+      ls.setData(spec.data.map((d) => ({ time: toChartTime(d.time), value: d.value })));
       lineSeriesRefs.current[key] = { series: ls, data: spec.data };
     }
 
     const markers: SeriesMarker<Time>[] = [];
     tradeLog.forEach((trade) => {
       markers.push({
-        time: trade.entry_date as unknown as Time,
+        time: toChartTime(trade.entry_date),
         position: trade.type === "LONG" ? "belowBar" : "aboveBar",
         color: trade.type === "LONG" ? "#4CAF50" : "#f44336",
         shape: trade.type === "LONG" ? "arrowUp" : "arrowDown",
         text: `Entry ${trade.type}`,
       });
       markers.push({
-        time: trade.exit_date as unknown as Time,
+        time: toChartTime(trade.exit_date),
         position: trade.type === "LONG" ? "aboveBar" : "belowBar",
         color: "#FF9800",
         shape: trade.type === "LONG" ? "arrowDown" : "arrowUp",
@@ -146,7 +147,7 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }: TradingChartP
     for (const [key, ref] of Object.entries(lineSeriesRefs.current)) {
       ref.series.setData(
         visible[key] !== false
-          ? ref.data.map((d) => ({ time: d.time as unknown as Time, value: d.value }))
+          ? ref.data.map((d) => ({ time: toChartTime(d.time), value: d.value }))
           : [],
       );
     }
@@ -156,27 +157,27 @@ const TradingChart = ({ priceData, tradeLog, indicatorData = {} }: TradingChartP
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap", marginBottom: "8px" }}>
         {Object.entries(indicatorData).map(([key, spec]) => (
-          <label key={key} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "#92a0b8" }}>
+          <label key={key} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "#5c574c" }}>
             <input type="checkbox" checked={visible[key] !== false}
               onChange={(e) => setVisible((p) => ({ ...p, [key]: e.target.checked }))} />
             <span style={{ display: "inline-block", width: 12, height: 2, background: spec.color, verticalAlign: "middle" }} />
             {spec.label}
           </label>
         ))}
-        <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "#92a0b8" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "#5c574c" }}>
           <input type="checkbox" checked={showMarkers}
             onChange={(e) => setShowMarkers(e.target.checked)} />
           Entry/Exit arrows
         </label>
-        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#92a0b8", marginLeft: "auto" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#5c574c", marginLeft: "auto" }}>
           Chart type
           <select value={chartType} onChange={(e) => setChartType(e.target.value)}
-            style={{ background: "#131722", color: "#92a0b8", border: "1px solid #232a38", borderRadius: "4px", padding: "2px 6px", fontSize: "12px" }}>
+            style={{ background: "#f4f2ee", color: "#111111", border: "2px solid #111111", padding: "2px 6px", fontSize: "12px" }}>
             {CHART_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
         </label>
       </div>
-      <div ref={chartContainerRef} style={{ position: "relative", width: "100%", border: "1px solid #1b212c", borderRadius: "10px", overflow: "hidden" }} />
+      <div ref={chartContainerRef} style={{ position: "relative", width: "100%", border: "2px solid #111111" }} />
     </div>
   );
 };

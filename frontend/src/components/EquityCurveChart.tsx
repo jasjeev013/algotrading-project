@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { createChart, CrosshairMode, LineSeries } from "lightweight-charts";
-import type { Time } from "lightweight-charts";
 import type { EquityPoint } from "../types/backtest";
+import { toChartTime } from "../utils/chartTime";
 
 interface EquityCurveChartProps {
   equityCurve: EquityPoint[];
@@ -20,11 +20,11 @@ const EquityCurveChart = ({ equityCurve }: EquityCurveChartProps) => {
       height: 260,
       layout: {
         background: { color: "transparent" },
-        textColor: "#92a0b8",
+        textColor: "#5c574c",
       },
       grid: {
-        vertLines: { color: "#1b212c" },
-        horzLines: { color: "#1b212c" },
+        vertLines: { color: "#e7e3da" },
+        horzLines: { color: "#e7e3da" },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
@@ -32,10 +32,10 @@ const EquityCurveChart = ({ equityCurve }: EquityCurveChartProps) => {
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
-        borderColor: "#232a38",
+        borderColor: "#111111",
       },
       rightPriceScale: {
-        borderColor: "#232a38",
+        borderColor: "#111111",
       },
     });
 
@@ -47,7 +47,7 @@ const EquityCurveChart = ({ equityCurve }: EquityCurveChartProps) => {
     });
 
     const data = equityCurve.map((point) => ({
-      time: point.time as Time,
+      time: toChartTime(point.time),
       value: point.equity,
     }));
     lineSeries.setData(data);
@@ -70,9 +70,7 @@ const EquityCurveChart = ({ equityCurve }: EquityCurveChartProps) => {
       style={{
         position: "relative",
         width: "100%",
-        border: "1px solid #1b212c",
-        borderRadius: "10px",
-        overflow: "hidden",
+        border: "2px solid #111111",
       }}
     />
   );
