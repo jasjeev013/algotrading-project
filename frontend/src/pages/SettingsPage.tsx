@@ -9,10 +9,9 @@ interface SettingsPageProps {
 
 const SettingsPage = ({ config, live }: SettingsPageProps) => (
   <>
-    <h1>Advanced Settings</h1>
-    <p className="subtitle">
-      Global cost defaults applied to every Strategy Explorer and Walk
-      Forward Engine run.
+    <h1 className="mb-1 text-[17px] font-bold">Advanced Settings</h1>
+    <p className="mb-5 text-[12.5px] text-muted-foreground">
+      Global cost defaults applied to every Strategy Explorer and Walk Forward Engine run.
     </p>
     <AdvancedSettingsPanel
       commissionPct={config.commissionPct}

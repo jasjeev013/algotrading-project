@@ -42,20 +42,20 @@ const LiveChart = ({ candles, trades, instrument }: LiveChartProps) => {
       width: container.clientWidth,
       height: 400,
       layout: {
-        background: { color: "transparent" },
-        textColor: "#92a0b8",
+        background: { color: "#ffffff" },
+        textColor: "#6b7280",
       },
       grid: {
-        vertLines: { color: "#1b212c" },
-        horzLines: { color: "#1b212c" },
+        vertLines: { color: "#eef0f2" },
+        horzLines: { color: "#eef0f2" },
       },
       crosshair: { mode: CrosshairMode.Normal },
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
-        borderColor: "#232a38",
+        borderColor: "#e3e5e9",
       },
-      rightPriceScale: { borderColor: "#232a38" },
+      rightPriceScale: { borderColor: "#e3e5e9" },
     });
     chartRef.current = chart;
 
@@ -147,8 +147,9 @@ const LiveChart = ({ candles, trades, instrument }: LiveChartProps) => {
       style={{
         position: "relative",
         width: "100%",
-        border: "1px solid #1b212c",
-        borderRadius: "10px",
+        background: "#ffffff",
+        border: "1px solid #e3e5e9",
+        borderRadius: "6px",
         overflow: "hidden",
       }}
     />

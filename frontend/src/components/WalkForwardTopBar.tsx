@@ -1,3 +1,8 @@
+import { useState } from "react";
+import type { ReactNode } from "react";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import StrategyParamsFields from "./StrategyParamsFields";
 import type { useStrategyConfig } from "../hooks/useStrategyConfig";
 import type { useWalkForwardRun } from "../hooks/useWalkForwardRun";
@@ -40,6 +45,13 @@ type WalkForwardTopBarProps = Pick<
     onRun: () => void;
   };
 
+const STRATEGY_PARAMS_LABEL: Record<string, string> = {
+  SMA: "SMA Crossover Settings",
+  Bollinger: "Bollinger Bands Settings",
+  ML: "Machine Learning Settings",
+  StatArb: "Pairs Trading Settings",
+};
+
 // Horizontal control bar for the Walk-Forward tab — mirrors BacktestTopBar's
 // layout (row of core fields + a collapsible params row below), with the
 // walk-forward window settings folded into that same collapsible row.
@@ -73,43 +85,32 @@ const WalkForwardTopBar = ({
   loading,
   onRun,
 }: WalkForwardTopBarProps) => {
+  const [paramsOpen, setParamsOpen] = useState(true);
+  const field = (label: string, children: ReactNode, width = "w-[130px]") => (
+    <div className={width}>
+      <label className="mb-1.5 block text-[12.5px] font-medium text-muted-foreground">{label}</label>
+      {children}
+    </div>
+  );
+
   return (
-    <div className="backtest-topbar">
-      <div className="backtest-topbar-row">
-        <div className="input-group topbar-field-sm">
-          <label>Ticker Symbol</label>
-          <input
-            type="text"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value)}
-            placeholder="AAPL"
-          />
-        </div>
+    <div className="mb-5 flex flex-col gap-4 rounded-md border border-border p-4">
+      <div className="flex flex-wrap items-start gap-4">
+        {field("Ticker Symbol", <Input value={ticker} onChange={(e) => setTicker(e.target.value)} placeholder="AAPL" />)}
+        {field(
+          "Start Date",
+          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />,
+          "w-[150px]",
+        )}
+        {field(
+          "End Date",
+          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />,
+          "w-[150px]",
+        )}
 
-        <div className="input-group topbar-field-sm">
-          <label>Start Date</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-        </div>
-
-        <div className="input-group topbar-field-sm">
-          <label>End Date</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
-        </div>
-
-        <div className="input-group topbar-field-md">
-          <label>Data Interval</label>
-          <select
-            value={dataInterval}
-            onChange={(e) => setDataInterval(e.target.value)}
-          >
+        {field(
+          "Data Interval",
+          <Select value={dataInterval} onChange={(e) => setDataInterval(e.target.value)}>
             <optgroup label="Daily+">
               <option value="1d">1 Day</option>
               <option value="1wk">1 Week</option>
@@ -119,15 +120,13 @@ const WalkForwardTopBar = ({
               <option value="5m">5 Minutes</option>
               <option value="15m">15 Minutes</option>
             </optgroup>
-          </select>
-        </div>
+          </Select>,
+          "w-[170px]",
+        )}
 
-        <div className="input-group topbar-field-md">
-          <label>Model</label>
-          <select
-            value={strategy}
-            onChange={(e) => setStrategy(e.target.value)}
-          >
+        {field(
+          "Model",
+          <Select value={strategy} onChange={(e) => setStrategy(e.target.value)}>
             <option value="SMA">SMA Crossover</option>
             <option value="EMA">EMA Crossover</option>
             <option value="MACD">MACD</option>
@@ -137,127 +136,85 @@ const WalkForwardTopBar = ({
             <option value="NDayMom">Momentum (N-Day)</option>
             <option value="ML">Machine Learning (RF)</option>
             <option value="StatArb">Pairs Trading (StatArb)</option>
-          </select>
-        </div>
+          </Select>,
+          "w-[170px]",
+        )}
 
-        <div className="input-group topbar-field-sm">
-          <label>Initial Capital ($)</label>
-          <input
-            type="number"
-            value={capital}
-            onChange={(e) => setCapital(e.target.value)}
-          />
-        </div>
+        {field("Initial Capital ($)", <Input type="number" value={capital} onChange={(e) => setCapital(e.target.value)} />)}
 
-        <button
-          className="run-btn topbar-run-btn"
-          onClick={onRun}
-          disabled={loading}
-        >
+        <Button className="ml-auto mt-[22px]" onClick={onRun} disabled={loading}>
           {loading ? "Running Walk-Forward…" : "Run Walk-Forward"}
-        </button>
+        </Button>
       </div>
 
-      <details className="backtest-topbar-params-row" open>
-        <summary className="topbar-params-label">
-          {strategy === "SMA"
-            ? "SMA Crossover Settings"
-            : strategy === "Bollinger"
-              ? "Bollinger Bands Settings"
-              : strategy === "ML"
-                ? "Machine Learning Settings"
-                : strategy === "StatArb"
-                  ? "Pairs Trading Settings"
-                  : "Strategy Settings"}{" "}
-          &amp; Walk-Forward Window
-        </summary>
+      <div className="border-t border-border pt-4">
+        <button
+          onClick={() => setParamsOpen((o) => !o)}
+          className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground"
+        >
+          <span>{paramsOpen ? "▾" : "▸"}</span>
+          {STRATEGY_PARAMS_LABEL[strategy] ?? "Strategy Settings"} &amp; Walk-Forward Window
+        </button>
 
-        <div className="backtest-topbar-params-content">
-          {strategy === "StatArb" && (
-            <div className="input-group topbar-field-sm">
-              <label>Pair Ticker</label>
-              <input
-                type="text"
-                value={pairTicker}
-                onChange={(e) => setPairTicker(e.target.value)}
-                placeholder="MSFT"
-              />
-              <p className="field-hint">
-                Second leg of the pair — spread traded against Ticker
-                Symbol.
-              </p>
-            </div>
-          )}
+        {paramsOpen && (
+          <div className="mt-3 flex flex-wrap items-start gap-4">
+            {strategy === "StatArb" &&
+              field(
+                "Pair Ticker",
+                <>
+                  <Input value={pairTicker} onChange={(e) => setPairTicker(e.target.value)} placeholder="MSFT" />
+                  <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+                    Second leg of the pair — spread traded against Ticker Symbol.
+                  </p>
+                </>,
+              )}
 
-          <StrategyParamsFields
-            strategy={strategy}
-            params={strategyParams}
-            onChange={setStrategyParams}
-          />
+            <StrategyParamsFields strategy={strategy} params={strategyParams} onChange={setStrategyParams} />
 
-          <div className="input-group topbar-field-sm">
-            <label>Window Unit</label>
-            <select
-              value={windowUnit}
-              onChange={(e) => setWindowUnit(e.target.value)}
-            >
-              <option value="days">Days</option>
-              <option value="weeks">Weeks</option>
-              <option value="months">Months</option>
-            </select>
-          </div>
+            {field(
+              "Window Unit",
+              <Select value={windowUnit} onChange={(e) => setWindowUnit(e.target.value)}>
+                <option value="days">Days</option>
+                <option value="weeks">Weeks</option>
+                <option value="months">Months</option>
+              </Select>,
+            )}
 
-          <div className="input-group topbar-field-sm">
-            <label>Train Length</label>
-            <input
-              type="number"
-              min="1"
-              value={trainMonths}
-              onChange={(e) => setTrainMonths(e.target.value)}
-            />
-          </div>
+            {field(
+              "Train Length",
+              <Input type="number" min="1" value={trainMonths} onChange={(e) => setTrainMonths(e.target.value)} />,
+            )}
 
-          <div className="input-group topbar-field-sm">
-            <label>Trade Length</label>
-            <input
-              type="number"
-              min="1"
-              value={tradeMonths}
-              onChange={(e) => setTradeMonths(e.target.value)}
-            />
-          </div>
+            {field(
+              "Trade Length",
+              <Input type="number" min="1" value={tradeMonths} onChange={(e) => setTradeMonths(e.target.value)} />,
+            )}
 
-          <div className="input-group topbar-field-sm">
-            <label>Step Length (optional)</label>
-            <input
-              type="number"
-              min="1"
-              value={stepMonths}
-              onChange={(e) => setStepMonths(e.target.value)}
-              placeholder={`Defaults to ${tradeMonths}`}
-            />
-          </div>
-
-          {NON_FITTING_STRATEGIES.includes(strategy) && (
-            <div className="input-group topbar-field-sm">
-              <label>Warm-up Bars</label>
-              <input
+            {field(
+              "Step Length (optional)",
+              <Input
                 type="number"
                 min="1"
-                value={warmupBars}
-                onChange={(e) => setWarmupBars(e.target.value)}
-              />
-            </div>
-          )}
+                value={stepMonths}
+                onChange={(e) => setStepMonths(e.target.value)}
+                placeholder={`Defaults to ${tradeMonths}`}
+              />,
+            )}
 
-          <p className="params-hint">
-            Trains on each {trainMonths}-{windowUnit} rolling window, then
-            trades the next {tradeMonths} {windowUnit} out-of-sample —
-            repeated across the full date range and stitched into one
-            continuous equity curve.
-          </p>
-        </div>
-      </details>
+            {NON_FITTING_STRATEGIES.includes(strategy) &&
+              field(
+                "Warm-up Bars",
+                <Input type="number" min="1" value={warmupBars} onChange={(e) => setWarmupBars(e.target.value)} />,
+              )}
+
+            <p className="w-full basis-full text-[11.5px] leading-relaxed text-muted-foreground">
+              Trains on each {trainMonths}-{windowUnit} rolling window, then trades the next {tradeMonths}{" "}
+              {windowUnit} out-of-sample — repeated across the full date range and stitched into one continuous
+              equity curve.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

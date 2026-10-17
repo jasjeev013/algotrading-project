@@ -6,8 +6,8 @@ interface SectionProps {
 }
 
 const Section = ({ title, children }: SectionProps) => (
-  <div className="section-block">
-    <h2>{title}</h2>
+  <div className="mb-8">
+    <h2 className="mb-2 text-[15px] font-semibold">{title}</h2>
     {children}
   </div>
 );
@@ -22,12 +22,12 @@ interface DefListProps {
 }
 
 const DefList = ({ items }: DefListProps) => (
-  <dl style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: "10px 20px", margin: "12px 0" }}>
+  <dl className="my-3 grid grid-cols-[200px_1fr] gap-x-5 gap-y-2.5">
     {items.map(({ term, def }) => (
-      <>
-        <dt key={`dt-${term}`} style={{ fontWeight: 600, color: "var(--text-primary)" }}>{term}</dt>
-        <dd key={`dd-${term}`} style={{ margin: 0, color: "var(--text-muted)", lineHeight: 1.6 }}>{def}</dd>
-      </>
+      <div className="contents" key={term}>
+        <dt className="font-semibold">{term}</dt>
+        <dd className="m-0 leading-relaxed text-muted-foreground">{def}</dd>
+      </div>
     ))}
   </dl>
 );
@@ -35,7 +35,7 @@ const DefList = ({ items }: DefListProps) => (
 const AboutPanel = () => (
   <>
     <Section title="Platform Overview">
-      <p className="section-desc">
+      <p className="text-[12.5px] leading-relaxed text-muted-foreground">
         QuantDash is a full-stack algorithmic trading and backtesting platform. It lets you design
         and validate trading strategies on historical data, then deploy them as a live paper-trading
         bot against OANDA's practice environment — all from one dashboard.
@@ -131,7 +131,7 @@ const AboutPanel = () => (
     </Section>
 
     <Section title="Walk-Forward Optimisation">
-      <p className="section-desc">
+      <p className="text-[12.5px] leading-relaxed text-muted-foreground">
         Walk-Forward Optimisation (WFO) is a rigorous validation technique that guards against
         overfitting. Instead of running a single backtest on all available data, WFO splits history
         into rolling windows:
@@ -150,7 +150,7 @@ const AboutPanel = () => (
           def: "How far to slide the window forward before the next fold. Defaults to the trade window length (non-overlapping). Smaller steps produce more folds but with more overlap.",
         },
       ]} />
-      <p className="section-desc" style={{ marginTop: 8 }}>
+      <p className="mt-2 text-[12.5px] leading-relaxed text-muted-foreground">
         The resulting equity curve is a concatenation of each window's out-of-sample performance —
         the fairest estimate of live performance you can get from historical data alone.
       </p>
@@ -182,7 +182,7 @@ const AboutPanel = () => (
     </Section>
 
     <Section title="OANDA Integration">
-      <p className="section-desc">
+      <p className="text-[12.5px] leading-relaxed text-muted-foreground">
         QuantDash connects to OANDA's practice (paper-trading) environment using the
         oandapyV20 REST API. All orders are placed as market orders with Fill-or-Kill
         time-in-force on the configured instrument (e.g., EUR_USD). No real money is at risk.

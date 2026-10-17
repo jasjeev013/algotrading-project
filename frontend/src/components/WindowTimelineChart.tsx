@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import type { WalkForwardWindowMetric } from "../types/walkForward";
 
 interface WindowTimelineChartProps {
@@ -5,10 +6,10 @@ interface WindowTimelineChartProps {
 }
 
 // One row per walk-forward window on a shared calendar axis: a muted bar for
-// the train period, a colored bar (accent = profit, danger = loss) for the
-// trade period. Lets you see at a glance how the rolling windows overlap and
-// which ones held up out-of-sample -- the return% is also a direct label on
-// each trade bar so the story doesn't depend on color alone.
+// the train period, a colored bar (positive = profit, negative = loss) for
+// the trade period. Lets you see at a glance how the rolling windows overlap
+// and which ones held up out-of-sample -- the return% is also a direct label
+// on each trade bar so the story doesn't depend on color alone.
 const WindowTimelineChart = ({ windowMetrics }: WindowTimelineChartProps) => {
   if (!windowMetrics || windowMetrics.length === 0) return null;
 
@@ -22,20 +23,20 @@ const WindowTimelineChart = ({ windowMetrics }: WindowTimelineChartProps) => {
     new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short" });
 
   return (
-    <div className="window-timeline">
-      <div className="window-timeline-legend">
-        <span className="wt-legend-item">
-          <span className="wt-swatch wt-swatch-train" /> Train period
+    <div className="rounded-md border border-border p-4">
+      <div className="mb-3.5 flex flex-wrap gap-4">
+        <span className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-muted-foreground/40" /> Train period
         </span>
-        <span className="wt-legend-item">
-          <span className="wt-swatch wt-swatch-profit" /> Trade — profit
+        <span className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-positive" /> Trade — profit
         </span>
-        <span className="wt-legend-item">
-          <span className="wt-swatch wt-swatch-loss" /> Trade — loss
+        <span className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-negative" /> Trade — loss
         </span>
       </div>
 
-      <div className="window-timeline-rows">
+      <div className="flex flex-col gap-0.5">
         {windowMetrics.map((w) => {
           const trainLeft = pct(w.train_start);
           const trainWidth = pct(w.train_end) - trainLeft;
@@ -46,16 +47,21 @@ const WindowTimelineChart = ({ windowMetrics }: WindowTimelineChartProps) => {
           const label = `${isProfit ? "+" : ""}${ret.toFixed(1)}%`;
 
           return (
-            <div className="window-timeline-row" key={w.window_index}>
-              <div className="wt-row-label">W{w.window_index + 1}</div>
-              <div className="wt-row-track">
+            <div className="flex h-[26px] items-center gap-2.5" key={w.window_index}>
+              <div className="w-8 flex-shrink-0 text-right text-[11px] text-muted-foreground">
+                W{w.window_index + 1}
+              </div>
+              <div className="relative h-[18px] flex-1 rounded bg-muted">
                 <div
-                  className="wt-bar wt-bar-train"
+                  className="absolute top-0 h-full rounded bg-muted-foreground/40"
                   style={{ left: `${trainLeft}%`, width: `calc(${trainWidth}% - 2px)` }}
                   title={`Train: ${w.train_start} → ${w.train_end}`}
                 />
                 <div
-                  className={`wt-bar wt-bar-trade ${isProfit ? "wt-bar-profit" : "wt-bar-loss"}`}
+                  className={cn(
+                    "absolute top-0 flex h-full items-center justify-center overflow-hidden rounded",
+                    isProfit ? "bg-positive" : "bg-negative",
+                  )}
                   style={{ left: `${tradeLeft}%`, width: `${tradeWidth}%` }}
                   title={
                     `Trade: ${w.trade_start} → ${w.trade_end}\n` +
@@ -65,7 +71,7 @@ const WindowTimelineChart = ({ windowMetrics }: WindowTimelineChartProps) => {
                     `Trades: ${w.metrics?.total_trades}`
                   }
                 >
-                  <span className="wt-bar-label">{label}</span>
+                  <span className="whitespace-nowrap px-1 text-[10px] font-semibold text-white">{label}</span>
                 </div>
               </div>
             </div>
@@ -73,7 +79,7 @@ const WindowTimelineChart = ({ windowMetrics }: WindowTimelineChartProps) => {
         })}
       </div>
 
-      <div className="window-timeline-axis">
+      <div className="mt-2.5 flex justify-between pl-[42px] text-[11px] text-muted-foreground">
         <span>{fmt(overallStart)}</span>
         <span>{fmt((overallStart + overallEnd) / 2)}</span>
         <span>{fmt(overallEnd)}</span>

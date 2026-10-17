@@ -52,18 +52,22 @@ const WalkForwardPage = ({ config, walkForward }: WalkForwardPageProps) => {
         onRun={runWalkForward}
       />
 
-      <h1>Walk-Forward Results</h1>
-      <p className="subtitle">
-        Rolling train/trade window validation — works for any strategy,
-        stitched into one continuous out-of-sample curve.
+      <h1 className="mb-1 text-[17px] font-bold">Walk-Forward Results</h1>
+      <p className="mb-5 text-[12.5px] text-muted-foreground">
+        Rolling train/trade window validation — works for any strategy, stitched into one continuous out-of-sample
+        curve.
       </p>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="mb-4 rounded-md border border-negative/30 bg-negative/5 px-3 py-2.5 text-[13px] text-negative">
+          {error}
+        </div>
+      )}
 
       {loading && (
-        <div className="spinner-wrap">
-          <div className="spinner"></div>
-          <p>Running Walk-Forward Engine…</p>
+        <div className="mt-16 flex flex-col items-center gap-3">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
+          <p className="text-[12.5px] text-muted-foreground">Running Walk-Forward Engine…</p>
         </div>
       )}
 
@@ -72,11 +76,10 @@ const WalkForwardPage = ({ config, walkForward }: WalkForwardPageProps) => {
           <MetricsGrid metrics={results.metrics} />
 
           {results.price_data && (
-            <div className="section-block">
-              <h2>Price Chart & Executions</h2>
-              <p className="section-desc">
-                Green arrows = Buy, Red arrows = Sell Short, Orange arrows =
-                Exit Position.
+            <div className="mb-6">
+              <h2 className="mb-1 text-[15px] font-semibold">Price Chart & Executions</h2>
+              <p className="mb-2.5 text-[12px] text-muted-foreground">
+                Green arrows = Buy, Red arrows = Sell Short, Orange arrows = Exit Position.
               </p>
               <TradingChart
                 priceData={results.price_data}
@@ -87,52 +90,43 @@ const WalkForwardPage = ({ config, walkForward }: WalkForwardPageProps) => {
           )}
 
           {results.equity_curve && (
-            <div className="section-block">
-              <h2>Stitched Equity Curve</h2>
-              <p className="section-desc">
-                Portfolio value across all walk-forward windows, compounding
-                continuously window to window.
+            <div className="mb-6">
+              <h2 className="mb-1 text-[15px] font-semibold">Stitched Equity Curve</h2>
+              <p className="mb-2.5 text-[12px] text-muted-foreground">
+                Portfolio value across all walk-forward windows, compounding continuously window to window.
               </p>
               <EquityCurveChart equityCurve={results.equity_curve} />
             </div>
           )}
 
           {!results.price_data && (
-            <p className="field-hint">
-              Loaded from saved history — price and equity charts aren't
-              stored for past runs, only metrics, per-window results, and the
-              trade log.
+            <p className="mb-5 text-[11.5px] leading-relaxed text-muted-foreground">
+              Loaded from saved history — price and equity charts aren't stored for past runs, only metrics,
+              per-window results, and the trade log.
             </p>
           )}
 
           {(results.walk_forward?.window_metrics?.length ?? 0) > 0 && (
-            <div className="section-block">
-              <h2>Window Timeline</h2>
-              <p className="section-desc">
-                Each row's muted bar is the training period, the colored bar
-                is what it traded out-of-sample — hover a trade bar for its
-                full metrics.
+            <div className="mb-6">
+              <h2 className="mb-1 text-[15px] font-semibold">Window Timeline</h2>
+              <p className="mb-2.5 text-[12px] text-muted-foreground">
+                Each row's muted bar is the training period, the colored bar is what it traded out-of-sample — hover
+                a trade bar for its full metrics.
               </p>
-              <WindowTimelineChart
-                windowMetrics={results.walk_forward?.window_metrics ?? []}
-              />
+              <WindowTimelineChart windowMetrics={results.walk_forward?.window_metrics ?? []} />
             </div>
           )}
 
           <WalkForwardTable walkForward={results.walk_forward} />
-          <FeatureImportancePanel
-            featureImportance={results.feature_importance}
-          />
+          <FeatureImportancePanel featureImportance={results.feature_importance} />
 
           <TradeLogTable tradeLog={results.trade_log} />
         </>
       )}
 
       {!results && !loading && !error && (
-        <div className="empty-state">
-          <div className="empty-icon">🔁</div>
-          Configure your parameters above and click "Run Walk-Forward" to
-          begin.
+        <div className="mt-16 rounded-md border border-dashed border-border py-12 text-center text-[13.5px] text-muted-foreground">
+          Configure your parameters above and click "Run Walk-Forward" to begin.
         </div>
       )}
     </>

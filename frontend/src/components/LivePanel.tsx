@@ -1,13 +1,16 @@
 import LiveChart from "./LiveChart";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import type { LiveCandle, LiveStatus, LiveTrade } from "../types/live";
 
 const ACTION_CLASS: Record<string, string> = {
-  buy: "positive",
-  sell: "negative",
+  buy: "text-positive",
+  sell: "text-negative",
   close: "",
   noop: "",
   skipped_risk_guard: "",
-  error: "negative",
+  error: "text-negative",
 };
 
 interface LivePanelProps {
@@ -23,115 +26,114 @@ const LivePanel = ({ instrument, candles, trades, status }: LivePanelProps) => {
 
   return (
     <>
-      <div className="live-status-strip">
-        <div className={`status-pill live-state ${running ? "on" : "off"}`}>
-          <span className={`status-dot ${running ? "online" : "offline"}`}></span>
+      <div className="mb-5 flex flex-wrap items-center gap-4 rounded-md border border-border px-4 py-3">
+        <div className="flex items-center gap-2 text-[13px] font-medium">
+          <span className={cn("h-2 w-2 rounded-full", running ? "bg-positive" : "bg-muted-foreground")} />
           {running ? `Running — ${status?.strategy ?? ""} on ${status?.instrument ?? instrument}` : "Stopped"}
         </div>
         {status?.last_heartbeat && (
-          <span className="live-heartbeat">Last heartbeat: {status.last_heartbeat}</span>
+          <span className="text-[12px] text-muted-foreground">Last heartbeat: {status.last_heartbeat}</span>
         )}
-        {status?.last_error && <span className="live-heartbeat error">Last error: {status.last_error}</span>}
+        {status?.last_error && (
+          <span className="text-[12px] text-negative">Last error: {status.last_error}</span>
+        )}
       </div>
 
-      <div className="section-block">
-        <h2>Live Price Chart</h2>
-        <p className="section-desc">
+      <div className="mb-6">
+        <h2 className="mb-1 text-[15px] font-semibold">Live Price Chart</h2>
+        <p className="mb-2.5 text-[12px] text-muted-foreground">
           {instrument} · candles refresh on every poll. Green = Buy, Red = Sell, Orange = Close.
         </p>
         {candles && candles.length > 0 ? (
           <LiveChart candles={candles} trades={trades} instrument={instrument} />
         ) : (
-          <div className="empty-state">
-            <div className="empty-icon">📡</div>
+          <div className="rounded-md border border-dashed border-border py-12 text-center text-[13.5px] text-muted-foreground">
             Waiting for candle data from OANDA…
           </div>
         )}
       </div>
 
-      <div className="section-block">
-        <h2>Open Positions</h2>
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Instrument</th>
-                <th>Side</th>
-                <th>Units</th>
-              </tr>
-            </thead>
-            <tbody>
-              {openPositions.map((pos) => {
-                const longUnits = parseFloat(String(pos.long?.units || 0));
-                const shortUnits = parseFloat(String(pos.short?.units || 0));
-                const side = longUnits !== 0 ? "long" : "short";
-                const units = longUnits !== 0 ? longUnits : shortUnits;
-                return (
-                  <tr key={pos.instrument}>
-                    <td>{pos.instrument}</td>
-                    <td className={side === "long" ? "positive" : "negative"}>{side}</td>
-                    <td>{units}</td>
-                  </tr>
-                );
-              })}
-              {openPositions.length === 0 && (
-                <tr>
-                  <td colSpan={3} style={{ textAlign: "center", color: "var(--text-muted)" }}>
-                    No open positions.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="mb-6">
+        <h2 className="mb-1 text-[15px] font-semibold">Open Positions</h2>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Instrument</TableHead>
+              <TableHead>Side</TableHead>
+              <TableHead>Units</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {openPositions.map((pos) => {
+              const longUnits = parseFloat(String(pos.long?.units || 0));
+              const shortUnits = parseFloat(String(pos.short?.units || 0));
+              const side = longUnits !== 0 ? "long" : "short";
+              const units = longUnits !== 0 ? longUnits : shortUnits;
+              return (
+                <TableRow key={pos.instrument}>
+                  <TableCell>{pos.instrument}</TableCell>
+                  <TableCell>
+                    <Badge variant={side === "long" ? "positive" : "negative"}>{side}</Badge>
+                  </TableCell>
+                  <TableCell>{units}</TableCell>
+                </TableRow>
+              );
+            })}
+            {openPositions.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center text-muted-foreground">
+                  No open positions.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
 
-      <div className="section-block">
-        <h2>Live Trade Log</h2>
-        <p className="section-desc">Every tick evaluated — actions, no-ops, and risk-guard skips.</p>
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Instrument</th>
-                <th>Strategy</th>
-                <th>Prior → Desired</th>
-                <th>Action</th>
-                <th>Units</th>
-                <th>P/L</th>
-                <th>Detail</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(trades || []).map((t) => (
-                <tr key={t.id}>
-                  <td>{t.signal_time}</td>
-                  <td>{t.instrument}</td>
-                  <td>{t.strategy}</td>
-                  <td>
-                    {t.prior_position} → {t.desired_position}
-                  </td>
-                  <td className={ACTION_CLASS[t.action] || ""}>{t.action}</td>
-                  <td>{t.units ?? "—"}</td>
-                  <td className={t.realized_pl != null ? (t.realized_pl >= 0 ? "positive" : "negative") : ""}>
-                    {t.realized_pl != null
-                      ? `${t.realized_pl >= 0 ? "+" : ""}${t.realized_pl.toFixed(2)}`
-                      : "—"}
-                  </td>
-                  <td>{t.error_detail ?? "—"}</td>
-                </tr>
-              ))}
-              {(!trades || trades.length === 0) && (
-                <tr>
-                  <td colSpan={8} style={{ textAlign: "center", color: "var(--text-muted)" }}>
-                    No live activity yet — start the bot to see ticks here.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="mb-6">
+        <h2 className="mb-1 text-[15px] font-semibold">Live Trade Log</h2>
+        <p className="mb-2.5 text-[12px] text-muted-foreground">
+          Every tick evaluated — actions, no-ops, and risk-guard skips.
+        </p>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Time</TableHead>
+              <TableHead>Instrument</TableHead>
+              <TableHead>Strategy</TableHead>
+              <TableHead>Prior → Desired</TableHead>
+              <TableHead>Action</TableHead>
+              <TableHead>Units</TableHead>
+              <TableHead>P/L</TableHead>
+              <TableHead>Detail</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {(trades || []).map((t) => (
+              <TableRow key={t.id}>
+                <TableCell>{t.signal_time}</TableCell>
+                <TableCell>{t.instrument}</TableCell>
+                <TableCell>{t.strategy}</TableCell>
+                <TableCell>
+                  {t.prior_position} → {t.desired_position}
+                </TableCell>
+                <TableCell className={cn(ACTION_CLASS[t.action] || "")}>{t.action}</TableCell>
+                <TableCell>{t.units ?? "—"}</TableCell>
+                <TableCell className={cn(t.realized_pl != null ? (t.realized_pl >= 0 ? "text-positive" : "text-negative") : "")}>
+                  {t.realized_pl != null ? `${t.realized_pl >= 0 ? "+" : ""}${t.realized_pl.toFixed(2)}` : "—"}
+                </TableCell>
+                <TableCell>{t.error_detail ?? "—"}</TableCell>
+              </TableRow>
+            ))}
+            {(!trades || trades.length === 0) && (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center text-muted-foreground">
+                  No live activity yet — start the bot to see ticks here.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
     </>
   );

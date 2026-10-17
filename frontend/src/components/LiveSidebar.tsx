@@ -1,6 +1,11 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 import axios from "axios";
 import { extractErrorDetail } from "../api/errors";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import type { KillSwitchResult, LiveAccount, LiveBotStartPayload, LiveStatus } from "../types/live";
 
 const API_BASE = "http://localhost:8000";
@@ -16,6 +21,13 @@ interface LiveSidebarProps {
   onStatusChange: (updater: (prev: LiveStatus | null) => LiveStatus | null) => void;
   startPayload: Omit<LiveBotStartPayload, "strategy" | "instrument" | "strategy_params">;
 }
+
+const Row = ({ label, value }: { label: string; value: ReactNode }) => (
+  <div className="flex justify-between border-t border-border py-1.5 text-[12.5px] first:border-t-0">
+    <span className="text-muted-foreground">{label}</span>
+    <span>{value}</span>
+  </div>
+);
 
 const LiveSidebar = ({
   strategy,
@@ -95,132 +107,124 @@ const LiveSidebar = ({
   const openPositions = status?.open_positions || [];
 
   return (
-    <div className="live-panel">
-      <div className="live-preview-card">
-        <h4>Account Summary</h4>
-        <div className="live-preview-row">
-          <span>Balance</span>
-          <span>{account?.balance ?? "—"}</span>
-        </div>
-        <div className="live-preview-row">
-          <span>Margin Used</span>
-          <span>{account?.marginUsed ?? "—"}</span>
-        </div>
-        <div className="live-preview-row">
-          <span>Equity (NAV)</span>
-          <span>{account?.NAV ?? "—"}</span>
-        </div>
-      </div>
+    <div className="flex flex-col gap-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Account Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <Row label="Balance" value={account?.balance ?? "—"} />
+          <Row label="Margin Used" value={account?.marginUsed ?? "—"} />
+          <Row label="Equity (NAV)" value={account?.NAV ?? "—"} />
+        </CardContent>
+      </Card>
 
-      <div className="live-preview-card">
-        <h4>Bot Status</h4>
-        <div className="live-preview-row">
-          <span>State</span>
-          <span>{running ? "Running" : "Stopped"}</span>
-        </div>
-        <div className="live-preview-row">
-          <span>Strategy</span>
-          <span>{status?.strategy ?? "—"}</span>
-        </div>
-        <div className="live-preview-row">
-          <span>Last Heartbeat</span>
-          <span>{status?.last_heartbeat ?? "—"}</span>
-        </div>
-        <div className="live-preview-row">
-          <span>Last Action</span>
-          <span>{status?.last_action ?? "—"}</span>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Bot Status</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <Row label="State" value={running ? "Running" : "Stopped"} />
+          <Row label="Strategy" value={status?.strategy ?? "—"} />
+          <Row label="Last Heartbeat" value={status?.last_heartbeat ?? "—"} />
+          <Row label="Last Action" value={status?.last_action ?? "—"} />
+        </CardContent>
+      </Card>
 
-      <div className="live-preview-card">
-        <h4>Bot Controls</h4>
-        <div className="input-group">
-          <label>Strategy</label>
-          <select
-            value={strategy}
-            onChange={(e) => setStrategy(e.target.value)}
-            disabled={running}
-          >
-            {LIVE_STRATEGIES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="input-group">
-          <label>Instrument</label>
-          <input
-            type="text"
-            value={instrument}
-            onChange={(e) => setInstrument(e.target.value)}
-            disabled={running}
-          />
-        </div>
-        <p className="field-hint">
-          Poll interval, candle feed, trade size, and risk guards come from
-          Advanced Settings → Live Bot Defaults.
-        </p>
-
-        {!running ? (
-          <button className="run-btn live-run-btn" onClick={handleStart} disabled={pending}>
-            {pending ? "Starting…" : "Start Bot"}
-          </button>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <button className="run-btn live-stop-btn" onClick={handleStop} disabled={pending}>
-              {pending ? "Stopping…" : "Stop Bot"}
-            </button>
-            <p className="field-hint" style={{ margin: 0 }}>
-              Stop Bot pauses the loop — open positions stay open. Use Stop &amp; Liquidate below to also close them.
-            </p>
-            <button className="kill-btn active" onClick={handleStopAndLiquidate} disabled={pending}>
-              {pending ? "Stopping…" : "Stop & Liquidate All"}
-            </button>
+      <Card>
+        <CardHeader>
+          <CardTitle>Bot Controls</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 pt-3">
+          <div>
+            <label className="mb-1.5 block text-[12.5px] font-medium text-muted-foreground">Strategy</label>
+            <Select value={strategy} onChange={(e) => setStrategy(e.target.value)} disabled={running}>
+              {LIVE_STRATEGIES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </Select>
           </div>
-        )}
+          <div>
+            <label className="mb-1.5 block text-[12.5px] font-medium text-muted-foreground">Instrument</label>
+            <Input value={instrument} onChange={(e) => setInstrument(e.target.value)} disabled={running} />
+          </div>
+          <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+            Poll interval, candle feed, trade size, and risk guards come from Advanced Settings → Live Bot Defaults.
+          </p>
 
-        {error && <p className="live-error">{error}</p>}
-      </div>
+          {!running ? (
+            <Button onClick={handleStart} disabled={pending}>
+              {pending ? "Starting…" : "Start Bot"}
+            </Button>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <Button variant="outline" onClick={handleStop} disabled={pending}>
+                {pending ? "Stopping…" : "Stop Bot"}
+              </Button>
+              <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+                Stop Bot pauses the loop — open positions stay open. Use Stop &amp; Liquidate below to also close
+                them.
+              </p>
+              <Button variant="destructive" onClick={handleStopAndLiquidate} disabled={pending}>
+                {pending ? "Stopping…" : "Stop & Liquidate All"}
+              </Button>
+            </div>
+          )}
+
+          {error && <p className="text-[12px] text-negative">{error}</p>}
+        </CardContent>
+      </Card>
 
       {openPositions.length > 0 && (
-        <div className="live-preview-card">
-          <h4>Open Positions</h4>
-          {openPositions.map((pos) => (
-            <div className="live-preview-row" key={pos.instrument}>
-              <span>{pos.instrument}</span>
-              <span>
-                {parseFloat(String(pos.long?.units || 0)) !== 0
-                  ? `long ${pos.long?.units}`
-                  : `short ${pos.short?.units}`}
-              </span>
-            </div>
-          ))}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Open Positions</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {openPositions.map((pos) => (
+              <Row
+                key={pos.instrument}
+                label={pos.instrument}
+                value={
+                  parseFloat(String(pos.long?.units || 0)) !== 0
+                    ? `long ${pos.long?.units}`
+                    : `short ${pos.short?.units}`
+                }
+              />
+            ))}
+          </CardContent>
+        </Card>
       )}
 
       {!running && (
-        <button className="kill-btn active" onClick={handleKillSwitch} disabled={pending}>
+        <Button variant="destructive" onClick={handleKillSwitch} disabled={pending}>
           Liquidate All Positions
-        </button>
+        </Button>
       )}
 
       {killResults && (
-        <div className="live-preview-card">
-          <h4>Liquidation Result</h4>
-          {killResults.map((r, i) => (
-            <div className="live-preview-row" key={i}>
-              <span>{r.instrument ?? "—"}</span>
-              <span>
-                {r.status === "closed"
-                  ? r.realized_pl != null
-                    ? `closed  P/L: ${r.realized_pl >= 0 ? "+" : ""}${r.realized_pl.toFixed(2)}`
-                    : "closed"
-                  : `error — ${r.detail}`}
-              </span>
-            </div>
-          ))}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Liquidation Result</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {killResults.map((r, i) => (
+              <Row
+                key={i}
+                label={r.instrument ?? "—"}
+                value={
+                  r.status === "closed"
+                    ? r.realized_pl != null
+                      ? `closed  P/L: ${r.realized_pl >= 0 ? "+" : ""}${r.realized_pl.toFixed(2)}`
+                      : "closed"
+                    : `error — ${r.detail}`
+                }
+              />
+            ))}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

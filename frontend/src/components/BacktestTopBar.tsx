@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import BacktestStrategyParamsFields from "./BacktestStrategyParamsFields";
+import StrategyParamsFields from "./StrategyParamsFields";
 import type { useStrategyConfig } from "../hooks/useStrategyConfig";
 
 type BacktestTopBarProps = Pick<
@@ -164,7 +164,7 @@ const BacktestTopBar = ({
                 </>,
               )}
 
-            <BacktestStrategyParamsFields strategy={strategy} params={strategyParams} onChange={setStrategyParams} />
+            <StrategyParamsFields strategy={strategy} params={strategyParams} onChange={setStrategyParams} />
           </div>
         )}
       </div>

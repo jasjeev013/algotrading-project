@@ -7,10 +7,9 @@ interface HistoryPageProps {
 
 const HistoryPage = ({ history }: HistoryPageProps) => (
   <>
-    <h1>History</h1>
-    <p className="subtitle">
-      Every backtest and walk-forward run saved to the database. Click a row
-      to reload its results.
+    <h1 className="mb-1 text-[17px] font-bold">History</h1>
+    <p className="mb-5 text-[12.5px] text-muted-foreground">
+      Every backtest and walk-forward run saved to the database. Click a row to reload its results.
     </p>
     <HistoryPanel
       runs={history.runs}
