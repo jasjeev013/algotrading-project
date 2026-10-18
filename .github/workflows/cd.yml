@@ -55,7 +55,7 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           build-args: |
-            VITE_API_BASE=${{ vars.VITE_API_BASE }}
+            VITE_API_BASE=${{ secrets.VITE_API_BASE }}
           tags: |
             ghcr.io/${{ github.repository_owner }}/quantdash-frontend:${{ github.event.workflow_run.head_branch }}
             ghcr.io/${{ github.repository_owner }}/quantdash-frontend:${{ github.event.workflow_run.head_sha }}
@@ -68,5 +68,5 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           build-args: |
-            VITE_API_BASE=${{ vars.VITE_API_BASE }}
+            VITE_API_BASE=${{ secrets.VITE_API_BASE }}
           tags: ghcr.io/${{ github.repository_owner }}/quantdash-frontend:latest
