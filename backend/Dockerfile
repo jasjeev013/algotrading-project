@@ -1,20 +1,27 @@
-# Use official Python runtime as a parent image
+# Production image: no --reload, no bind-mounted source, runs as a
+# non-root user. Local dev uses Dockerfile.dev instead (see root
+# docker-compose.yml).
 FROM python:3.12-slim
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file into the container
-COPY requirements.txt .
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Install dependencies
+RUN useradd --create-home --shell /bin/bash appuser
+
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the backend code
 COPY . .
 
-# Expose port 8000 for FastAPI
+# Pre-create the volume mount point owned by appuser -- Docker copies this
+# directory's permissions into a freshly-created named volume on first use,
+# so QUANTDASH_DB_PATH stays writable without running as root.
+RUN mkdir -p /app/data && chown appuser:appuser /app/data
+
+USER appuser
+
 EXPOSE 8000
 
-# Command to run the application (bind to 0.0.0.0 so it's accessible outside the container)
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

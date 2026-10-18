@@ -1,7 +1,13 @@
+import os
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./quantdash.db"
+# Overridable so production can point this at a volume-mounted path --
+# otherwise every container recreation (e.g. on deploy) wipes trade/backtest
+# history, since the default path lives inside the container's writable layer.
+DB_PATH = os.environ.get("QUANTDASH_DB_PATH", "./quantdash.db")
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
