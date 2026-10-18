@@ -16,18 +16,6 @@ whether to update an existing doc or create a new one. See the root
 - [frontend-db-costs.md](frontend-db-costs.md) — frontend state persistence, DB schema, and cost-model calculations
 - [learning-roadmap.md](learning-roadmap.md) — personal learning roadmap notes
 
-## Plans (`plans/`)
-
-Implementation plans Claude wrote before executing a task — one file per task, kept as a historical record (not merged/updated in place).
-
-- [plans/2026-08-22-v3-slice1-indicator-pipeline.md](plans/2026-08-22-v3-slice1-indicator-pipeline.md)
-- [plans/2026-08-22-v3-slice2-categorisation.md](plans/2026-08-22-v3-slice2-categorisation.md)
-- [plans/2026-08-22-v3-slice3-trend-strategies.md](plans/2026-08-22-v3-slice3-trend-strategies.md)
-- [plans/2026-08-22-v3-slice4-momentum-strategies.md](plans/2026-08-22-v3-slice4-momentum-strategies.md)
-- [plans/2026-08-22-v3-slice5-mean-reversion.md](plans/2026-08-22-v3-slice5-mean-reversion.md)
-- [plans/2026-08-22-v3-slice6-volatility-strategies.md](plans/2026-08-22-v3-slice6-volatility-strategies.md)
-- [plans/2026-10-10-cicd-pipeline-plan.md](plans/2026-10-10-cicd-pipeline-plan.md) — GitHub Actions CI/CD setup
-- [plans/2026-10-18-deploy-pipeline-plan.md](plans/2026-10-18-deploy-pipeline-plan.md) — auto-deploy to homeserver on push to `master` (Tailscale + SSH + GHCR pull)
-- [plans/2026-10-17-frontend-typescript-migration.md](plans/2026-10-17-frontend-typescript-migration.md) — big-bang JS→TS frontend migration + `typecheck-frontend` CI job
-- [plans/2026-10-17-shadcn-ui-redesign.md](plans/2026-10-17-shadcn-ui-redesign.md) — shadcn/ui + Tailwind, screener.in-style sober theme, applied app-wide
-- [plans/2026-10-17-shadcn-ui-redesign-implementation-plan.md](plans/2026-10-17-shadcn-ui-redesign-implementation-plan.md) — 9-task implementation plan for the above spec
+Implementation plans live in `docs/plans/` (one level up, not under
+`context/`) — one file per task, written once and never updated after the
+fact. This index only covers the living specs/architecture docs above.

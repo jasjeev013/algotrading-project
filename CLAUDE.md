@@ -23,7 +23,7 @@ npm run dev
 Or from the repo root: `docker-compose up` (builds and runs both services).
 
 ## CI/CD
-GitHub Actions: `.github/workflows/ci.yml` (lint/typecheck/test + build-verify, runs on push to `develop`/`master` or PRs targeting them) and `.github/workflows/cd.yml` (publishes Docker images to GHCR after CI succeeds on `develop`/`master`). See `docs/context/plans/2026-10-10-cicd-pipeline-plan.md` for the design rationale.
+GitHub Actions: `.github/workflows/ci.yml` (lint/typecheck/test + build-verify, runs on push to `develop`/`master` or PRs targeting them), `.github/workflows/cd.yml` (publishes Docker images to GHCR after CI succeeds on `develop`/`master`), and `.github/workflows/deploy.yml` (SSHes into the homeserver over Tailscale to pull+restart containers after CD succeeds on `master`). See `docs/plans/2026-10-10-cicd-pipeline-plan.md` and `docs/plans/2026-10-18-deploy-pipeline-plan.md` for the design rationale.
 
 ---
 
@@ -34,7 +34,7 @@ This repo accumulates design/implementation context in `docs/context/` instead o
 1. **Check the index first** — `docs/context/README.md` lists every doc in `docs/context/` with a one-line description. Read it before deciding where something belongs; don't open every file to find out.
 2. **Update in place when a doc already covers the topic.** E.g. a change to strategy execution goes into `docs/context/strategy-execution-flow.md`, not a new file. Specs/architecture docs in `docs/context/` are living documents, updated as the system evolves — not one-off snapshots (the exception is `architecture.md`, explicitly kept as a historical V1 snapshot).
 3. **Create a new file only for genuinely new scope** that doesn't fit an existing doc. Add it to `docs/context/README.md`'s index in the same change.
-4. **Plans go in `docs/context/plans/`, not `docs/superpowers/`.** When using plan mode or the brainstorming/writing-plans skills, save the resulting plan/spec into `docs/context/plans/` (one file per task, named `YYYY-MM-DD-<topic>.md`) instead of those skills' own default `docs/superpowers/` location — this is the "user preference" override those skills already support. Add the new file to the index too.
+4. **Plans go in `docs/plans/`, not `docs/context/plans/` or `docs/superpowers/`.** When using plan mode or the brainstorming/writing-plans skills, save the resulting plan/spec into `docs/plans/` (one file per task, named `YYYY-MM-DD-<topic>.md`) instead of those skills' own default `docs/superpowers/` location — this is the "user preference" override those skills already support. Plans are written once and left alone — do not revise a plan file after the work it describes is done, even if the implementation diverges from it later; that's what `docs/context/` is for. `docs/plans/` has no index of its own and isn't listed in `docs/context/README.md`.
 5. **Keep this root file an overview.** Detailed "what exists and how it works" content belongs in `docs/context/`, not here — this file should stay short enough to read in full every session.
 
 `backend/CLAUDE.md` and `frontend/CLAUDE.md` are directory maps, not context docs — update them only when the folder structure itself changes (new top-level module/folder), not for every feature.
