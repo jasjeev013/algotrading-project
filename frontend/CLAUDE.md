@@ -3,7 +3,7 @@
 React 19 + Vite + TypeScript (`strict` mode) + Tailwind CSS v4. Entry point:
 `src/main.tsx` → `src/App.tsx`. UI theme: sober, screener.in-inspired
 (Inter, white background, thin gray borders, blue accent, semantic
-red/green only) — see `docs/context/plans/2026-10-17-shadcn-ui-redesign.md`.
+red/green only) — see `docs/plans/2026-10-17-shadcn-ui-redesign.md`.
 
 For *why* things work the way they do, see `docs/context/` at the repo root
 (`frontend-db-costs.md` covers state persistence/DB schema/cost calculations).
