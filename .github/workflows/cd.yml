@@ -4,6 +4,7 @@ on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
+    branches: [master]
 
 permissions:
   contents: read
@@ -13,8 +14,7 @@ jobs:
   publish:
     if: >
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      contains(fromJSON('["develop", "master"]'), github.event.workflow_run.head_branch)
+      github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,17 +36,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/quantdash-backend:${{ github.event.workflow_run.head_branch }}
             ghcr.io/${{ github.repository_owner }}/quantdash-backend:${{ github.event.workflow_run.head_sha }}
-
-      - name: Tag backend image as latest (master only)
-        if: github.event.workflow_run.head_branch == 'master'
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: true
-          tags: ghcr.io/${{ github.repository_owner }}/quantdash-backend:latest
+            ghcr.io/${{ github.repository_owner }}/quantdash-backend:latest
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v6
@@ -57,16 +48,48 @@ jobs:
           build-args: |
             VITE_API_BASE=${{ secrets.VITE_API_BASE }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/quantdash-frontend:${{ github.event.workflow_run.head_branch }}
             ghcr.io/${{ github.repository_owner }}/quantdash-frontend:${{ github.event.workflow_run.head_sha }}
+            ghcr.io/${{ github.repository_owner }}/quantdash-frontend:latest
 
-      - name: Tag frontend image as latest (master only)
-        if: github.event.workflow_run.head_branch == 'master'
-        uses: docker/build-push-action@v6
+  deploy:
+    name: Deploy to homeserver
+    needs: publish
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
         with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          push: true
-          build-args: |
-            VITE_API_BASE=${{ secrets.VITE_API_BASE }}
-          tags: ghcr.io/${{ github.repository_owner }}/quantdash-frontend:latest
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          args: --accept-routes
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+      - name: Deploy to server
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=no \
+            deployer@${{ secrets.TAILSCALE_SERVER_IP }} << 'ENDSSH'
+            set -e
+            cd /opt/quantdash
+
+            echo "Logging into GHCR..."
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+            echo "Pulling latest images..."
+            docker pull ghcr.io/${{ github.repository_owner }}/quantdash-backend:latest
+            docker pull ghcr.io/${{ github.repository_owner }}/quantdash-frontend:latest
+
+            echo "Restarting containers..."
+            docker compose up -d --pull always --remove-orphans
+
+            echo "Cleaning up old images..."
+            docker image prune -f
+
+            echo "Deployment complete!"
+            docker ps | grep quantdash
+          ENDSSH
