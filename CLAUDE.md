@@ -23,7 +23,7 @@ npm run dev
 Or from the repo root: `docker-compose up` (builds and runs both services).
 
 ## CI/CD
-GitHub Actions: `.github/workflows/ci.yml` (lint/typecheck/test + build-verify, runs on push to `develop`/`master` or PRs targeting them), `.github/workflows/cd.yml` (publishes Docker images to GHCR after CI succeeds on `develop`/`master`), and `.github/workflows/deploy.yml` (SSHes into the homeserver over Tailscale to pull+restart containers after CD succeeds on `master`). See `docs/plans/2026-10-10-cicd-pipeline-plan.md` and `docs/plans/2026-10-18-deploy-pipeline-plan.md` for the design rationale.
+GitHub Actions: `.github/workflows/ci.yml` (lint/typecheck/test + build-verify, runs on push to `develop`/`master` or PRs targeting them) and `.github/workflows/cd.yml` (`master`-only — after CI succeeds on a push to `master`, publishes Docker images to GHCR, then SSHes into the homeserver over Tailscale to pull+restart containers). `develop` pushes only get CI; nothing publishes or deploys from `develop`. See `docs/plans/2026-10-10-cicd-pipeline-plan.md` and `docs/plans/2026-10-18-deploy-pipeline-plan.md` for the design rationale (written when CD and deploy were still separate workflows — `cd.yml` has since merged them).
 
 ---
 
